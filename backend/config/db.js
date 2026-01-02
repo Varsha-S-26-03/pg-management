@@ -17,6 +17,15 @@ const connectDB = async () => {
       mongoUri = mongoUri.replace(/\?&/, '?').replace(/&&/, '&');
     }
 
+    // Ensure database name is specified in URI
+    // If no database name is in URI, add 'pgmanagement' as default
+    if (!mongoUri.includes('/') || mongoUri.split('?')[0].endsWith('/')) {
+      const separator = mongoUri.includes('?') ? '?' : '';
+      const queryString = mongoUri.includes('?') ? mongoUri.split('?')[1] : '';
+      mongoUri = mongoUri.split('?')[0].replace(/\/$/, '') + '/pgmanagement' + separator + queryString;
+      console.log('📝 Added database name "pgmanagement" to connection string');
+    }
+    
     const conn = await mongoose.connect(mongoUri, {
       // Connection options for better reliability
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
@@ -25,11 +34,7 @@ const connectDB = async () => {
     console.log(`✅ MongoDB connected successfully: ${conn.connection.host}`);
     console.log(`📊 Database name: ${conn.connection.name}`);
     console.log(`🔌 Connection state: ${conn.connection.readyState} (1 = connected)`);
-    
-    // Check if database name is 'test' (default) - might need to specify in URI
-    if (conn.connection.name === 'test') {
-      console.log('⚠️  Warning: Using default database "test". Consider specifying database name in MONGODB_URI');
-    }
+    console.log(`📦 Collection will be: users`);
     
     return conn;
   } catch (error) {

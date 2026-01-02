@@ -34,14 +34,26 @@ const Signup = ({ onLogin }) => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', {
+      const requestData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role
-      });
+      };
+      
+      console.log('🚀 Frontend sending signup request:');
+      console.log('URL:', 'http://localhost:5000/api/auth/signup');
+      console.log('Data:', requestData);
+      
+      const response = await axios.post('http://localhost:5000/api/auth/signup', requestData);
+      
+      console.log('✅ Signup successful:', response.data);
       onLogin(response.data.token, response.data.user);
     } catch (err) {
+      console.error('❌ Frontend signup error:');
+      console.error('Error:', err);
+      console.error('Response:', err.response);
+      console.error('Response data:', err.response?.data);
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);

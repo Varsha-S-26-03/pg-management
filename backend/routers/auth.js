@@ -8,6 +8,10 @@ const router = express.Router();
 // Signup route
 router.post('/signup', async (req, res) => {
   try {
+    // STEP 1: Check if request body is coming
+    console.log('🔍 REQ BODY:', req.body);
+    console.log('🔍 REQ HEADERS:', req.headers['content-type']);
+    
     // Check if database is connected
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
@@ -69,6 +73,11 @@ router.post('/signup', async (req, res) => {
       return res.status(500).json({ message: 'Failed to save user to database' });
     }
     console.log('✅ User verified in database:', savedUser.email);
+    
+    // Additional verification - count users in collection
+    const userCount = await User.countDocuments();
+    console.log(`📊 Total users in database: ${userCount}`);
+    console.log(`📦 Database: ${mongoose.connection.name}, Collection: users`);
 
     // Check if JWT_SECRET is set
     if (!process.env.JWT_SECRET) {
@@ -95,11 +104,12 @@ router.post('/signup', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Signup error occurred:');
+    // STEP 4: Catch & PRINT the real error
+    console.error('❌ SIGNUP ERROR:', error);
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error code:', error.code);
-    console.error('Full error:', error);
+    console.error('Error stack:', error.stack);
     
     // Handle validation errors
     if (error.name === 'ValidationError') {
@@ -119,16 +129,14 @@ router.post('/signup', async (req, res) => {
       console.error('MongoDB error:', error.message);
       return res.status(500).json({ 
         message: 'Database error occurred', 
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
+        error: error.message
       });
     }
     
-    // Handle other errors - always show error in response for debugging
-    const errorMessage = error.message || 'Unknown error occurred';
-    console.error('Returning error response:', errorMessage);
+    // Handle other errors - show actual error message
     res.status(500).json({ 
-      message: 'Server error: ' + errorMessage,
-      error: errorMessage
+      message: error.message || 'Server error occurred',
+      error: error.message
     });
   }
 });
