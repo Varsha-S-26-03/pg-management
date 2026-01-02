@@ -32,14 +32,25 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  // Skip if password is not modified
+  if (!this.isModified('password')) {
+    if (typeof next === 'function') {
+      return next();
+    }
+    return;
+  }
   
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
+    if (typeof next === 'function') {
+      return next();
+    }
   } catch (error) {
-    next(error);
+    if (typeof next === 'function') {
+      return next(error);
+    }
+    throw error;
   }
 });
 
