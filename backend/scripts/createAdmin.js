@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') }
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const connectDB = require('../config/db');
+const connectDB = require('../db');
 
 const createAdmin = async () => {
   try {
@@ -15,6 +15,9 @@ const createAdmin = async () => {
       name: args[0] || 'Admin User',
       email: args[1] || 'admin@pgmanagement.com',
       password: args[2] || 'admin123',
+      address: args[3] || '',
+      idType: args[4] || '',
+      idNumber: args[5] || '',
       role: 'admin'
     };
 
@@ -33,6 +36,9 @@ const createAdmin = async () => {
     const admin = new User({
       name: adminData.name,
       email: adminData.email.toLowerCase().trim(),
+      address: adminData.address ? adminData.address.trim() : undefined,
+      idType: adminData.idType || undefined,
+      idNumber: adminData.idNumber ? adminData.idNumber.trim() : undefined,
       password: adminData.password, // Will be hashed by pre-save hook
       role: 'admin'
     });

@@ -2,18 +2,21 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const connectDB = require('./config/db');
+const connectDB = require('./db');
 const authRoutes = require('./routers/auth');
+const tenantRoutes = require('./routers/tenants');
+const usersRoutes = require('./routers/users');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/tenants', tenantRoutes);
+app.use('/api/users', usersRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
@@ -23,16 +26,6 @@ app.get('/', (req, res) => {
     dbConnected: mongoose.connection.readyState === 1,
     dbName: mongoose.connection.name,
     dbHost: mongoose.connection.host
-  });
-});
-
-// Test endpoint to verify request body parsing
-app.post('/test', (req, res) => {
-  console.log('🔍 TEST REQ BODY:', req.body);
-  res.json({ 
-    message: 'Request received',
-    body: req.body,
-    contentType: req.headers['content-type']
   });
 });
 

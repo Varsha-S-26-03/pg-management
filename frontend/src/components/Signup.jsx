@@ -7,6 +7,9 @@ const Signup = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    address: '',
+    idType: '',
+    idNumber: '',
     password: '',
     confirmPassword: '',
     role: 'tenant'
@@ -15,10 +18,28 @@ const Signup = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    let v = value;
+
+    // Normalize PAN to uppercase
+    if (name === 'idNumber' && formData.idType === 'pan') {
+      v = v.toUpperCase();
+    }
+
+    // If ID type changes, clear idNumber
+    if (name === 'idType') {
+      setFormData({
+        ...formData,
+        idType: v,
+        idNumber: ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: v
+      });
+    }
+
     setError('');
   };
 
@@ -33,27 +54,48 @@ const Signup = ({ onLogin }) => {
       return;
     }
 
+    // Validate ID number if provided
+    if (formData.idType && formData.idNumber) {
+      const id = formData.idNumber.trim();
+      if (formData.idType === 'aadhaar') {
+        if (!/^\d{12}$/.test(id)) {
+          setError('Aadhaar must be a 12 digit number');
+          setLoading(false);
+          return;
+        }
+      } else if (formData.idType === 'pan') {
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(id)) {
+          setError('PAN must be 10 characters in format ABCDE1234F');
+          setLoading(false);
+          return;
+        }
+      }
+    } else if (formData.idType && !formData.idNumber) {
+      setError('Please enter the ID number for the selected ID type');
+      setLoading(false);
+      return;
+    }
+
+
     try {
-      const requestData = {
+      const response = await axios.post('http://localhost:5000/api/auth/signup', {
         name: formData.name,
         email: formData.email,
+        address: formData.address,
+        idType: formData.idType,
+        idNumber: formData.idNumber,
         password: formData.password,
         role: formData.role
-      };
-      
-      console.log('🚀 Frontend sending signup request:');
-      console.log('URL:', 'http://localhost:5000/api/auth/signup');
-      console.log('Data:', requestData);
-      
-      const response = await axios.post('http://localhost:5000/api/auth/signup', requestData);
-      
-      console.log('✅ Signup successful:', response.data);
-      onLogin(response.data.token, response.data.user);
+      });
+
+      // If token returned -> login normally
+      if (response.data?.token) {
+        onLogin(response.data.token, response.data.user);
+      } else {
+        // Otherwise show informational message about pending approval
+        setError(response.data?.message || 'Signup submitted — pending approval');
+      }
     } catch (err) {
-      console.error('❌ Frontend signup error:');
-      console.error('Error:', err);
-      console.error('Response:', err.response);
-      console.error('Response data:', err.response?.data);
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
@@ -128,6 +170,66 @@ const Signup = ({ onLogin }) => {
               placeholder="Enter your email"
               autoComplete="email"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="address">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="2"></circle>
+              </svg>
+              Address
+            </label>
+            <input
+              type="text"
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Enter your address (optional)"
+              autoComplete="street-address"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="idType">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2a2 2 0 0 1 2 2v2h-4V4a2 2 0 0 1 2-2z"></path>
+                  <path d="M20 8v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8h16z"></path>
+                </svg>
+                ID Type
+              </label>
+              <select
+                id="idType"
+                name="idType"
+                value={formData.idType}
+                onChange={handleChange}
+              >
+                <option value="">Select ID (optional)</option>
+                <option value="aadhaar">Aadhaar Card</option>
+                <option value="pan">PAN Card</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="idNumber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 7h18M6 10h.01M6 14h.01M8 10h.01M8 14h.01"></path>
+                </svg>
+                ID Number
+              </label>
+              <input
+                type="text"
+                id="idNumber"
+                name="idNumber"
+                value={formData.idNumber}
+                onChange={handleChange}
+                placeholder={formData.idType === 'aadhaar' ? '12 digit Aadhaar' : formData.idType === 'pan' ? 'ABCDE1234F' : 'Select ID type first'}
+                autoComplete="off"
+                disabled={formData.idType === ''}
+              />
+            </div>
           </div>
 
           <div className="form-group">

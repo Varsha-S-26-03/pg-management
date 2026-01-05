@@ -1,13 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import Tenants from './Tenants';
+import AddTenant from './AddTenant';
 import './Dashboard.css';
 
 const Dashboard = ({ onLogout }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  const maskId = (id) => {
+    if (!id) return '';
+    const s = String(id);
+    if (s.length <= 4) return s;
+    // show only last 4, mask the rest
+    return '••••' + s.slice(-4);
+  };
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -28,7 +40,14 @@ const Dashboard = ({ onLogout }) => {
     };
 
     fetchUserProfile();
-  }, []);
+
+    // check query param to open Add Tenant inline
+    const qp = new URLSearchParams(location.search);
+    if (qp.get('openAdd') === '1') {
+      setActiveTab('tenants');
+      setShowAdd(true);
+    }
+  }, [location.search]);
 
   const handleLogout = () => {
     onLogout();
@@ -359,9 +378,14 @@ const Dashboard = ({ onLogout }) => {
           <div className="content-area">
             <div className="page-header">
               <h1>Tenant Management</h1>
-              <button className="btn-primary">Add New Tenant</button>
+              <button className="btn-primary" onClick={() => setActiveTab('tenants')}>Manage Tenants</button>
             </div>
-            <p className="placeholder-text">Tenant management features coming soon...</p>
+            {showAdd && (
+              <div style={{ marginBottom: 16 }}>
+                <AddTenant onCreated={() => setShowAdd(false)} />
+              </div>
+            )}
+            <Tenants />
           </div>
         )}
 
@@ -390,6 +414,14 @@ const Dashboard = ({ onLogout }) => {
                 <div className="setting-item">
                   <label>Email Address</label>
                   <p>{user?.email}</p>
+                </div>
+                <div className="setting-item">
+                  <label>Address</label>
+                  <p>{user?.address || 'Not provided'}</p>
+                </div>
+                <div className="setting-item">
+                  <label>ID</label>
+                  <p>{user?.idType ? `${user.idType.toUpperCase()} • ${maskId(user?.idNumber)}` : 'Not provided'}</p>
                 </div>
                 <div className="setting-item">
                   <label>User Role</label>

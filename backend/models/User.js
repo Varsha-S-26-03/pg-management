@@ -14,6 +14,20 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  address: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  idType: {
+    type: String,
+    enum: ['aadhaar', 'pan']
+  },
+  idNumber: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   password: {
     type: String,
     required: true,
@@ -23,6 +37,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['admin', 'tenant', 'owner'],
     default: 'tenant'
+  },
+  approved: {
+    type: Boolean,
+    default: true
   },
   createdAt: {
     type: Date,

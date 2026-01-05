@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const connectDB = require('../config/db');
+const connectDB = require('../db');
 
 const testSignup = async () => {
   try {
@@ -13,6 +13,9 @@ const testSignup = async () => {
     const testUserData = {
       name: 'Test User',
       email: 'test@example.com',
+      address: '123 Test St, Test City',
+      idType: 'aadhaar',
+      idNumber: '123456789012',
       password: 'test123',
       role: 'tenant'
     };

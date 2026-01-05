@@ -441,6 +441,55 @@
   color: #764ba2;
 }
 
+/* Tenant list styles */
+.tenant-list {
+  display: grid;
+  gap: 16px;
+}
+
+.tenant-card {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.tenant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tenant-room {
+  color: #6b7280;
+  font-size: 13px;
+  margin-right: 12px;
+}
+
+.tenant-actions .remove, .text-btn.remove {
+  color: #dc2626;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.card h2 {
+  margin: 0 0 12px 0;
+}
+
+.auth-info {
+  background: #e8f0ff;
+  border-left: 4px solid #667eea;
+  padding: 12px;
+  border-radius: 8px;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
 /* Activity List */
 .activity-list {
   display: flex;

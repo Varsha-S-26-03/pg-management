@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
+import AddTenant from './components/AddTenant';
 import './App.css';
 
 function App() {
@@ -62,6 +63,15 @@ function App() {
           element={
             isAuthenticated ? 
             <Dashboard onLogout={handleLogout} /> : 
+            <Navigate to="/login" />
+          } 
+        />
+
+        <Route 
+          path="/tenants/add" 
+          element={
+            isAuthenticated ? 
+            <Navigate to="/dashboard?openAdd=1" /> : 
             <Navigate to="/login" />
           } 
         />

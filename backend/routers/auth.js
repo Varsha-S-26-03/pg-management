@@ -8,17 +8,13 @@ const router = express.Router();
 // Signup route
 router.post('/signup', async (req, res) => {
   try {
-    // STEP 1: Check if request body is coming
-    console.log('🔍 REQ BODY:', req.body);
-    console.log('🔍 REQ HEADERS:', req.headers['content-type']);
-    
     // Check if database is connected
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ message: 'Database not connected. Please try again later.' });
     }
 
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, address, idType, idNumber } = req.body;
 
     // Validate input
     if (!name || !email || !password) {
@@ -41,12 +37,17 @@ router.post('/signup', async (req, res) => {
     }
 
     // Create new user
-    console.log('Creating user with data:', { name, email: normalizedEmail, role: role || 'tenant' });
+    console.log('Creating user with data:', { name, email: normalizedEmail, address, idType, idNumber, role: role || 'tenant' });
+    const isTenant = (role || 'tenant') === 'tenant';
     const user = new User({
       name: name.trim(),
       email: normalizedEmail,
+      address: address ? address.trim() : undefined,
+      idType: idType || undefined,
+      idNumber: idNumber ? idNumber.trim() : undefined,
       password,
-      role: role || 'tenant'
+      role: role || 'tenant',
+      approved: isTenant ? false : true
     });
 
     console.log('Attempting to save user to database...');
@@ -73,11 +74,6 @@ router.post('/signup', async (req, res) => {
       return res.status(500).json({ message: 'Failed to save user to database' });
     }
     console.log('✅ User verified in database:', savedUser.email);
-    
-    // Additional verification - count users in collection
-    const userCount = await User.countDocuments();
-    console.log(`📊 Total users in database: ${userCount}`);
-    console.log(`📦 Database: ${mongoose.connection.name}, Collection: users`);
 
     // Check if JWT_SECRET is set
     if (!process.env.JWT_SECRET) {
@@ -85,7 +81,13 @@ router.post('/signup', async (req, res) => {
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
-    // Create token
+    // If tenant signup, do not auto-login — require admin approval
+    if (user.role === 'tenant' && user.approved === false) {
+      console.log('Signup pending admin approval for:', user.email);
+      return res.status(201).json({ message: 'Signup successful. Pending admin approval.' });
+    }
+
+    // Create token for approved users (admins/owners or approved tenants)
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -100,16 +102,18 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        address: user.address,
+        idType: user.idType,
+        idNumber: user.idNumber,
         role: user.role
       }
     });
   } catch (error) {
-    // STEP 4: Catch & PRINT the real error
-    console.error('❌ SIGNUP ERROR:', error);
+    console.error('❌ Signup error occurred:');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error code:', error.code);
-    console.error('Error stack:', error.stack);
+    console.error('Full error:', error);
     
     // Handle validation errors
     if (error.name === 'ValidationError') {
@@ -129,14 +133,16 @@ router.post('/signup', async (req, res) => {
       console.error('MongoDB error:', error.message);
       return res.status(500).json({ 
         message: 'Database error occurred', 
-        error: error.message
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
       });
     }
     
-    // Handle other errors - show actual error message
+    // Handle other errors - always show error in response for debugging
+    const errorMessage = error.message || 'Unknown error occurred';
+    console.error('Returning error response:', errorMessage);
     res.status(500).json({ 
-      message: error.message || 'Server error occurred',
-      error: error.message
+      message: 'Server error: ' + errorMessage,
+      error: errorMessage
     });
   }
 });
@@ -173,6 +179,12 @@ router.post('/login', async (req, res) => {
 
     console.log('Password verified for user:', normalizedEmail);
 
+    // Prevent login for tenants not approved by admin
+    if (user.role === 'tenant' && user.approved === false) {
+      console.log('Login blocked — tenant pending approval:', normalizedEmail);
+      return res.status(403).json({ message: 'Account pending admin approval' });
+    }
+
     // Check if JWT_SECRET is set
     if (!process.env.JWT_SECRET) {
       console.error('JWT_SECRET is not set in environment variables');
@@ -193,6 +205,9 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        address: user.address,
+        idType: user.idType,
+        idNumber: user.idNumber,
         role: user.role
       }
     });
