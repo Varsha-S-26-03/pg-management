@@ -5,6 +5,15 @@ import './Rooms.css';
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    roomNumber: '',
+    type: 'single',
+    capacity: '',
+    price: '',
+    floor: ''
+  });
+
   const groupByFloor = (list) => {
     const map = {};
     const arr = Array.isArray(list) ? list : [];
@@ -66,18 +75,46 @@ const Rooms = () => {
       alert(err.response?.data?.message || 'Failed to delete room');
     }
   };
-  const createRoom = async () => {
-    const roomNumber = window.prompt('Room number');
-    const type = window.prompt('Type (single/double/triple/dormitory) or 1/2/3/4');
-    const capacity = window.prompt('Capacity');
-    const price = window.prompt('Price');
-    const floor = window.prompt('Floor');
-    if (!roomNumber || !type || !capacity || !price) return;
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewRoom(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const openCreateModal = () => {
+    setNewRoom({
+      roomNumber: '',
+      type: 'single',
+      capacity: '',
+      price: '',
+      floor: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleCreateRoomSubmit = async (e) => {
+    e.preventDefault();
+    const { roomNumber, type, capacity, price, floor } = newRoom;
+    
+    if (!roomNumber || !type || !capacity || !price) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       await axios.post('http://localhost:5000/api/rooms', {
-        roomNumber, type: normalizeType(type), capacity: Number(capacity), price: Number(price), floor: Number(floor || 1)
+        roomNumber,
+        type, // Type is already normalized by the select input
+        capacity: Number(capacity),
+        price: Number(price),
+        floor: Number(floor || 1)
       }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      setIsModalOpen(false);
       await fetchRooms();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to create room');
@@ -108,7 +145,7 @@ const Rooms = () => {
     <div className="content-area">
       <div className="page-header">
         <h1>Room Management</h1>
-        <button className="btn-primary" onClick={createRoom}>Create Room</button>
+        <button className="btn-primary" onClick={openCreateModal}>Create Room</button>
       </div>
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px' }}>
@@ -175,6 +212,75 @@ const Rooms = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Add New Room</h2>
+              <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleCreateRoomSubmit}>
+              <div className="form-group">
+                <label>Room Number</label>
+                <input
+                  type="text"
+                  name="roomNumber"
+                  value={newRoom.roomNumber}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 101"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select name="type" value={newRoom.type} onChange={handleInputChange}>
+                  <option value="single">Single (1)</option>
+                  <option value="double">Double (2)</option>
+                  <option value="triple">Triple (3)</option>
+                  <option value="dormitory">Dormitory (4+)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Capacity</label>
+                <input
+                  type="number"
+                  name="capacity"
+                  value={newRoom.capacity}
+                  onChange={handleInputChange}
+                  min="1"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Price (₹)</label>
+                <input
+                  type="number"
+                  name="price"
+                  value={newRoom.price}
+                  onChange={handleInputChange}
+                  min="0"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Floor</label>
+                <input
+                  type="number"
+                  name="floor"
+                  value={newRoom.floor}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 1"
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Create Room</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
