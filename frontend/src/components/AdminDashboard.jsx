@@ -1,16 +1,29 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './AdminDashboard.css';
+import Stats from './Stats';
+import AiRentCalculator from './AiRentCalculator';
+import RecentActivities from './RecentActivities';
+import QuickStats from './QuickStats';
+import Rooms from './Rooms';
+import Payments from './Payments';
 
-const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimized }) => {
+const AdminDashboard = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
   const [pendingTenants, setPendingTenants] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
-    totalUsers: 0,
+    totalTenants: 0,
     pendingApprovals: 0,
-    approvedTenants: 0,
-    totalOwners: 0
+    occupiedBeds: 0,
+    totalRevenue: 0,
+    balance:0,
+    pendingPayments:0
   });
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'approvals') {
@@ -60,18 +73,12 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/auth/all-users', {
+      const response = await axios.get('http://localhost:5000/api/stats/admin', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      const users = response.data.users || [];
-      setStats({
-        totalUsers: users.length,
-        pendingApprovals: users.filter(u => u.role === 'tenant' && !u.isApproved).length,
-        approvedTenants: users.filter(u => u.role === 'tenant' && u.isApproved).length,
-        totalOwners: users.filter(u => u.role === 'owner').length
-      });
+      setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -112,65 +119,137 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
     }
   };
 
+  const handleLogout = () => {
+    onLogout();
+  };
+
+  const handleRemoveUser = async (userId) => {
+    if (!window.confirm('Remove this user?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      fetchAllUsers();
+      fetchStats();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error removing user');
+    }
+  };
+
   return (
-    <>
-      <nav className="sidebar-nav">
-        <button 
-          className={activeTab === 'overview' ? 'active' : ''} 
-          onClick={() => setActiveTab('overview')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          Overview
-        </button>
+    <div className="dashboard-container">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>PG Manager</span>
+          </div>
+        </div>
 
-        <button 
-          className={activeTab === 'approvals' ? 'active' : ''} 
-          onClick={() => setActiveTab('approvals')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 12l2 2 4-4"></path>
-            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
-            <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
-            <path d="M12 21c0-1-1-3-3-3s-3 2-3 3 1 3 3 3 3-2 3-3z"></path>
-            <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3z"></path>
-          </svg>
-          Tenant Approvals
-          {stats.pendingApprovals > 0 && (
-            <span style={{ marginLeft: 'auto', background: '#dc2626', color: 'white', borderRadius: '10px', padding: '2px 8px', fontSize: '12px', fontWeight: '600' }}>
-              {stats.pendingApprovals}
-            </span>
-          )}
-        </button>
+        <nav className="sidebar-nav">
+          <button 
+            className={activeTab === 'overview' ? 'active' : ''} 
+            onClick={() => setActiveTab('overview')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Overview
+          </button>
 
-        <button 
-          className={activeTab === 'users' ? 'active' : ''} 
-          onClick={() => setActiveTab('users')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          All Users
-        </button>
+          <button 
+            className={activeTab === 'approvals' ? 'active' : ''} 
+            onClick={() => setActiveTab('approvals')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 12l2 2 4-4"></path>
+              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+              <path d="M12 21c0-1-1-3-3-3s-3 2-3 3 1 3 3 3 3-2 3-3z"></path>
+              <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3z"></path>
+            </svg>
+            Tenant Approvals
+            {stats.pendingApprovals > 0 && (
+              <span style={{ marginLeft: 'auto', background: '#dc2626', color: 'white', borderRadius: '10px', padding: '2px 8px', fontSize: '12px', fontWeight: '600' }}>
+                {stats.pendingApprovals}
+              </span>
+            )}
+          </button>
 
-        <button 
-          className={activeTab === 'settings' ? 'active' : ''} 
-          onClick={() => setActiveTab('settings')}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
-          </svg>
-          Settings
-        </button>
-      </nav>
+          <button 
+            className={activeTab === 'users' ? 'active' : ''} 
+            onClick={() => setActiveTab('users')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            All Users
+          </button>
+
+          <button 
+            className={activeTab === 'rooms' ? 'active' : ''} 
+            onClick={() => setActiveTab('rooms')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            </svg>
+            Rooms
+          </button>
+
+          <button 
+            className={activeTab === 'payments' ? 'active' : ''} 
+            onClick={() => setActiveTab('payments')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            Payments
+          </button>
+
+          <button 
+            className={activeTab === 'settings' ? 'active' : ''} 
+            onClick={() => setActiveTab('settings')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+            </svg>
+            Settings
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-profile">
+            <div className="avatar">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="user-info">
+              <p className="user-name">{user?.name}</p>
+              <p className="user-role">{user?.role}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="logout-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </aside>
 
       <main className="main-content">
         <header className="top-bar">
@@ -179,7 +258,16 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
             </svg>
-            <input type="text" placeholder="Search users, tenants..." />
+            <input type="text" placeholder="Search rooms, tenants, payments..." />
+          </div>
+          <div className="top-bar-actions">
+            <button className="icon-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span className="badge">3</span>
+            </button>
           </div>
         </header>
 
@@ -188,65 +276,18 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
             <div className="page-header">
               <div>
                 <h1>Welcome back, {user?.name}! 👋</h1>
-                <p>Admin Dashboard - System Overview</p>
+                <p>Here's what's happening with your properties today</p>
               </div>
+              <button className="btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add New Room
+              </button>
             </div>
 
-            <div className="stats-grid">
-              <div className="stat-card blue">
-                <div className="stat-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <p className="stat-label">Total Users</p>
-                  <h3 className="stat-value">{stats.totalUsers}</h3>
-                </div>
-              </div>
-
-              <div className="stat-card orange">
-                <div className="stat-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <p className="stat-label">Pending Approvals</p>
-                  <h3 className="stat-value">{stats.pendingApprovals}</h3>
-                  <p className="stat-change">Requires attention</p>
-                </div>
-              </div>
-
-              <div className="stat-card green">
-                <div className="stat-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <p className="stat-label">Approved Tenants</p>
-                  <h3 className="stat-value">{stats.approvedTenants}</h3>
-                </div>
-              </div>
-
-              <div className="stat-card purple">
-                <div className="stat-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <p className="stat-label">Property Owners</p>
-                  <h3 className="stat-value">{stats.totalOwners}</h3>
-                </div>
-              </div>
-            </div>
+            <Stats stats={stats} />
 
             {stats.pendingApprovals > 0 && (
               <div className="card" style={{ marginTop: '24px', background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border: '1px solid #f59e0b' }}>
@@ -265,6 +306,15 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
                 </p>
               </div>
             )}
+
+            <div className="dashboard-grid" style={{ marginTop: '24px' }}>
+              <RecentActivities />
+              <QuickStats />
+            </div>
+
+            <div style={{ marginTop: '24px' }}>
+              <AiRentCalculator />
+            </div>
           </div>
         )}
 
@@ -274,6 +324,13 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
               <h1>Tenant Approvals</h1>
               <button className="btn-primary" onClick={fetchPendingTenants}>
                 Refresh
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={() => navigate('/tenants')}
+                style={{ marginLeft: '12px' }}
+              >
+                Open Tenants
               </button>
             </div>
 
@@ -310,6 +367,17 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
                       <div>
                         <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>{tenant.name}</h3>
                         <p style={{ margin: '0 0 4px 0', color: '#6b7280' }}>{tenant.email}</p>
+                        {tenant.phone && (
+                          <p style={{ margin: '0 0 4px 0', color: '#6b7280' }}>{tenant.phone}</p>
+                        )}
+                        {tenant.address && (
+                          <p style={{ margin: '0 0 4px 0', color: '#6b7280' }}>{tenant.address}</p>
+                        )}
+                        {(tenant.idType || tenant.idNumber) && (
+                          <p style={{ margin: '0 0 4px 0', color: '#6b7280' }}>
+                            {tenant.idType ? tenant.idType.toUpperCase() : 'ID'} • {tenant.idNumber ? ('••••' + String(tenant.idNumber).slice(-4)) : ''}
+                          </p>
+                        )}
                         <p style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
                           Signed up: {new Date(tenant.createdAt).toLocaleDateString('en-IN', { 
                             year: 'numeric', 
@@ -384,22 +452,24 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
                       <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Name</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Email</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Room No</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Role</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Status</th>
-                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Joined</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {allUsers.map((user) => (
-                        <tr key={user._id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <tr key={user._id} style={{ borderBottom: '1px solid #e5e7eb', cursor: 'pointer' }} onClick={() => setSelectedUser(user)}>
                           <td style={{ padding: '12px' }}>{user.name}</td>
                           <td style={{ padding: '12px', color: '#6b7280' }}>{user.email}</td>
+                          <td style={{ padding: '12px' }}>{user.roomNumber || '—'}</td>
                           <td style={{ padding: '12px' }}>
                             <span className="role-badge">{user.role}</span>
                           </td>
                           <td style={{ padding: '12px' }}>
                             {user.role === 'tenant' ? (
-                              user.isApproved ? (
+                              user.approved ? (
                                 <span style={{ color: '#10b981', fontWeight: '600' }}>Approved</span>
                               ) : (
                                 <span style={{ color: '#f59e0b', fontWeight: '600' }}>Pending</span>
@@ -408,12 +478,15 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
                               <span style={{ color: '#10b981', fontWeight: '600' }}>Active</span>
                             )}
                           </td>
-                          <td style={{ padding: '12px', color: '#9ca3af', fontSize: '14px' }}>
-                            {new Date(user.createdAt).toLocaleDateString('en-IN', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
+                          <td style={{ padding: '12px' }}>
+                            {user.role !== 'admin' && (
+                              <button
+                                className="text-btn remove"
+                                onClick={(e) => { e.stopPropagation(); handleRemoveUser(user._id); }}
+                              >
+                                Remove
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -424,6 +497,9 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
             )}
           </div>
         )}
+
+        {activeTab === 'rooms' && <Rooms />}
+        {activeTab === 'payments' && <Payments />}
 
         {activeTab === 'settings' && (
           <div className="content-area">
@@ -457,10 +533,29 @@ const AdminDashboard = ({ user, onLogout, activeTab, setActiveTab, sidebarMinimi
             </div>
           </div>
         )}
+        {selectedUser && (
+          <div className="card" style={{ position: 'fixed', right: '24px', bottom: '24px', width: '360px', maxWidth: '90vw', zIndex: 50 }}>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2>Details</h2>
+              <button className="text-btn" onClick={() => setSelectedUser(null)}>Close</button>
+            </div>
+            <div style={{ padding: '16px' }}>
+              <p><strong>Name:</strong> {selectedUser.name}</p>
+              <p><strong>Email:</strong> {selectedUser.email}</p>
+              <p><strong>Phone:</strong> {selectedUser.phone || '—'}</p>
+              <p><strong>Address:</strong> {selectedUser.address || '—'}</p>
+              <p><strong>Age:</strong> {typeof selectedUser.age === 'number' ? selectedUser.age : '—'}</p>
+              <p><strong>Occupation:</strong> {selectedUser.occupation || '—'}</p>
+              <p><strong>Room No:</strong> {selectedUser.roomNumber || '—'}</p>
+              <p><strong>Joined:</strong> {new Date(selectedUser.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+              <p><strong>Move Out:</strong> {selectedUser.moveOutDate ? new Date(selectedUser.moveOutDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</p>
+              <p><strong>Remaining Rent:</strong> {typeof selectedUser.remainingRent === 'number' ? `₹${selectedUser.remainingRent}` : '₹0'}</p>
+            </div>
+          </div>
+        )}
       </main>
-    </>
+    </div>
   );
 };
 
 export default AdminDashboard;
-

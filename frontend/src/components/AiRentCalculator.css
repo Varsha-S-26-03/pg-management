@@ -1,0 +1,55 @@
+.ai-rent-calculator {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ai-rent-calculator .card-header {
+  margin-bottom: 20px;
+}
+
+.ai-rent-calculator .card-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.calculator-body .form-group {
+  margin-bottom: 16px;
+}
+
+.calculator-body .form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.calculator-body .form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.calculated-rent {
+  margin-top: 20px;
+  background-color: #e0f2fe;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.calculated-rent h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #0c4a6e;
+}
+
+.calculated-rent p {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0c4a6e;
+}

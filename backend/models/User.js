@@ -14,10 +14,32 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  phone: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   address: {
     type: String,
     trim: true,
     default: ''
+  },
+  age: {
+    type: Number,
+    min: 18,
+    max: 100
+  },
+  occupation: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  moveOutDate: {
+    type: Date
+  },
+  remainingRent: {
+    type: Number,
+    default: 0
   },
   idType: {
     type: String,

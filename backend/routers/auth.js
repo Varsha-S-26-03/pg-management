@@ -1,100 +1,102 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const PendingTenant = require('../models/PendingTenant');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-// Signup route
+/* =========================
+   SIGNUP ROUTE
+========================= */
 router.post('/signup', async (req, res) => {
   try {
-    // Check if database is connected
-    const mongoose = require('mongoose');
+    // Check DB connection
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ message: 'Database not connected. Please try again later.' });
+      return res.status(503).json({ message: 'Database not connected' });
     }
 
-    const { name, email, password, role, address, idType, idNumber } = req.body;
+    // ✅ PROPER destructuring (FIXED)
+    const {
+      name,
+      email,
+      password,
+      role,
+      phone,
+      address,
+      age,
+      occupation,
+      idType,
+      idNumber
+    } = req.body;
 
-    // Validate input
+    // Basic validation
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+      return res.status(400).json({ message: 'Name, email and password are required' });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
-    // Normalize email (lowercase and trim) to match how it's stored
     const normalizedEmail = email.toLowerCase().trim();
     console.log('Signup attempt for email:', normalizedEmail);
 
-    // Check if user already exists
+    // Check existing user
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      console.log('User already exists with email:', normalizedEmail);
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
-    console.log('Creating user with data:', { name, email: normalizedEmail, address, idType, idNumber, role: role || 'tenant' });
     const isTenant = (role || 'tenant') === 'tenant';
+
+    // ✅ Create user safely
     const user = new User({
       name: name.trim(),
       email: normalizedEmail,
-      address: address ? address.trim() : undefined,
-      idType: idType || undefined,
-      idNumber: idNumber ? idNumber.trim() : undefined,
       password,
       role: role || 'tenant',
-      approved: isTenant ? false : true
+      approved: isTenant ? false : true,
+      phone: phone ? phone.trim() : '',
+      address: address ? address.trim() : '',
+      age: age ? parseInt(age) : undefined,
+      occupation: occupation ? occupation.trim() : '',
+      idType: idType || undefined,
+      idNumber: idNumber ? idNumber.trim() : ''
     });
 
-    console.log('Attempting to save user to database...');
-    console.log('Database connection state:', mongoose.connection.readyState);
-    console.log('Database name:', mongoose.connection.name);
-    
-    try {
-      await user.save();
-      console.log('✅ User saved successfully with ID:', user._id);
-      console.log('User email:', user.email);
-      console.log('User role:', user.role);
-    } catch (saveError) {
-      console.error('❌ Error saving user:', saveError);
-      console.error('Error name:', saveError.name);
-      console.error('Error message:', saveError.message);
-      console.error('Error code:', saveError.code);
-      throw saveError; // Re-throw to be caught by outer catch
-    }
+    // Save user
+    await user.save();
+    console.log('✅ User saved:', user.email);
 
-    // Verify user was saved by querying the database
-    const savedUser = await User.findById(user._id);
-    if (!savedUser) {
-      console.error('❌ User was not found in database after save!');
-      return res.status(500).json({ message: 'Failed to save user to database' });
-    }
-    console.log('✅ User verified in database:', savedUser.email);
-
-    // Check if JWT_SECRET is set
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not set in environment variables');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-
-    // If tenant signup, do not auto-login — require admin approval
+    // Tenant → wait for admin approval
     if (user.role === 'tenant' && user.approved === false) {
-      console.log('Signup pending admin approval for:', user.email);
-      return res.status(201).json({ message: 'Signup successful. Pending admin approval.' });
+      try {
+        await PendingTenant.create({
+          userId: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          address: user.address || '',
+          idType: user.idType || '',
+          idNumber: user.idNumber || ''
+        });
+      } catch (ptErr) {
+        console.error('❌ Failed to create PendingTenant record:', ptErr.message);
+      }
+      return res.status(201).json({
+        message: 'Signup successful. Pending admin approval.'
+      });
     }
 
-    // Create token for approved users (admins/owners or approved tenants)
+    // JWT
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    console.log('Signup successful for user:', user.email);
     res.status(201).json({
       message: 'User created successfully',
       token,
@@ -102,96 +104,47 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        address: user.address,
-        idType: user.idType,
-        idNumber: user.idNumber,
+        phone: user.phone,
         role: user.role
       }
     });
+
   } catch (error) {
-    console.error('❌ Signup error occurred:');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error code:', error.code);
-    console.error('Full error:', error);
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      console.error('Validation errors:', messages);
-      return res.status(400).json({ message: messages.join(', ') });
-    }
-    
-    // Handle duplicate key error (unique email)
-    if (error.code === 11000) {
-      console.error('Duplicate email error - user already exists');
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-    
-    // Handle Mongoose errors
-    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
-      console.error('MongoDB error:', error.message);
-      return res.status(500).json({ 
-        message: 'Database error occurred', 
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
-      });
-    }
-    
-    // Handle other errors - always show error in response for debugging
-    const errorMessage = error.message || 'Unknown error occurred';
-    console.error('Returning error response:', errorMessage);
-    res.status(500).json({ 
-      message: 'Server error: ' + errorMessage,
-      error: errorMessage
+    console.error('❌ Signup error:', error.message);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
     });
   }
 });
 
-// Login route
+/* =========================
+   LOGIN ROUTE
+========================= */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
+      return res.status(400).json({ message: 'Email and password required' });
     }
 
-    // Normalize email (lowercase and trim) to match how it's stored
     const normalizedEmail = email.toLowerCase().trim();
-    console.log('Login attempt for email:', normalizedEmail);
 
-    // Check if user exists
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      console.log('User not found with email:', normalizedEmail);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    console.log('User found:', user.email, 'Role:', user.role);
-
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.log('Password mismatch for user:', normalizedEmail);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    console.log('Password verified for user:', normalizedEmail);
-
-    // Prevent login for tenants not approved by admin
     if (user.role === 'tenant' && user.approved === false) {
-      console.log('Login blocked — tenant pending approval:', normalizedEmail);
       return res.status(403).json({ message: 'Account pending admin approval' });
     }
 
-    // Check if JWT_SECRET is set
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not set in environment variables');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-
-    // Create token
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,
@@ -205,25 +158,181 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        address: user.address,
-        idType: user.idType,
-        idNumber: user.idNumber,
         role: user.role
       }
     });
+
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('❌ Login error:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get user profile (protected route)
-router.get('/profile', authMiddleware, async (req, res) => {
+/* =========================
+   TENANT APPROVAL ROUTE
+========================= */
+router.patch('/approve-tenant/:tenantId', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('-password');
-    res.json(user);
+    // Check if the user is an admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const { tenantId } = req.params;
+
+    // Support both User ID and PendingTenant ID
+    let tenant = await User.findById(tenantId);
+    if (!tenant) {
+      const pending = await PendingTenant.findById(tenantId);
+      if (!pending) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+      tenant = await User.findById(pending.userId);
+      if (!tenant) {
+        return res.status(404).json({ message: 'User not found for pending tenant' });
+      }
+    }
+
+    // Approve the tenant
+    tenant.approved = true;
+    await tenant.save();
+
+    // Cleanup pending record if exists
+    try {
+      await PendingTenant.deleteOne({ userId: tenant._id });
+    } catch (cleanupErr) {
+      console.warn('⚠️ Failed to remove PendingTenant on approval:', cleanupErr.message);
+    }
+
+    res.json({ message: 'Tenant approved successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('❌ Tenant approval error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* =========================
+   TENANT REJECTION ROUTE
+========================= */
+router.delete('/reject-tenant/:tenantId', authMiddleware, async (req, res) => {
+  try {
+    // Check if the user is an admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const { tenantId } = req.params;
+
+    // Support both User ID and PendingTenant ID
+    let tenant = await User.findById(tenantId);
+    if (!tenant) {
+      const pending = await PendingTenant.findById(tenantId);
+      if (!pending) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+      tenant = await User.findById(pending.userId);
+      if (!tenant) {
+        return res.status(404).json({ message: 'User not found for pending tenant' });
+      }
+    }
+
+    await User.findByIdAndDelete(tenant._id);
+    await PendingTenant.deleteOne({ userId: tenant._id });
+
+    res.json({ message: 'Tenant rejected and deleted successfully' });
+  } catch (error) {
+    console.error('❌ Tenant rejection error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* =========================
+   PENDING TENANTS ROUTE
+========================= */
+router.get('/pending-tenants', authMiddleware, async (req, res) => {
+  try {
+    // Check if the user is an admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    // Get all pending tenant records from the dedicated collection
+    const pendingRecords = await PendingTenant.find({}).sort({ createdAt: -1 });
+
+    // Also include legacy users with approved=false not yet in PendingTenant
+    const legacyUsers = await User.find({ role: 'tenant', approved: false }).sort({ createdAt: -1 });
+    const existingUserIds = new Set(pendingRecords.map(p => String(p.userId)));
+
+    const legacyNotRecorded = legacyUsers
+      .filter(u => !existingUserIds.has(String(u._id)))
+      .map(u => ({
+        _id: u._id, // allow frontend to call approve with this id; backend supports it
+        userId: u._id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone || '',
+        address: u.address || '',
+        idType: u.idType || '',
+        idNumber: u.idNumber || '',
+        createdAt: u.createdAt
+      }));
+
+    const combined = [
+      ...pendingRecords.map(p => ({
+        _id: p._id,
+        userId: p.userId,
+        name: p.name,
+        email: p.email,
+        phone: p.phone,
+        address: p.address,
+        idType: p.idType,
+        idNumber: p.idNumber,
+        createdAt: p.createdAt
+      })),
+      ...legacyNotRecorded
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ tenants: combined });
+  } catch (error) {
+    console.error('❌ Pending tenants error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* =========================
+   ALL USERS ROUTE
+========================= */
+router.get('/all-users', authMiddleware, async (req, res) => {
+  try {
+    // Check if the user is an admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    // Find all users
+    const allUsers = await User.find({});
+    // Map userId -> roomNumber if assigned
+    try {
+      const Room = require('../models/Room');
+      const rooms = await Room.find({}, 'roomNumber tenants');
+      const map = new Map();
+      rooms.forEach(r => {
+        r.tenants.forEach(tid => {
+          map.set(String(tid), r.roomNumber);
+        });
+      });
+      const withRoom = allUsers.map(u => ({
+        ...u.toObject(),
+        roomNumber: map.get(String(u._id)) || null
+      }));
+      return res.json({ users: withRoom });
+    } catch (joinErr) {
+      // Fallback without roomNumber if join fails
+      return res.json({ users: allUsers });
+    }
+  } catch (error) {
+    console.error('❌ All users error:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

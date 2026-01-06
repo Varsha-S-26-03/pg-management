@@ -1,0 +1,83 @@
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.room-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.room-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.room-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.room-card .card-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.room-card .status {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.room-card .status.available {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.room-card .status.occupied {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.room-card .card-body {
+  padding: 24px;
+}
+
+.occupants {
+  margin-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+.occupant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.occupant-name {
+  font-weight: 600;
+  color: #111827;
+}
+.occupant-email {
+  color: #6b7280;
+  font-size: 12px;
+}
+.room-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.btn-primary.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.btn-primary.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}

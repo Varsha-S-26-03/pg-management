@@ -1,0 +1,50 @@
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-icon svg {
+  width: 20px;
+  height: 20px;
+  color: #ffffff;
+}
+
+.activity-content {
+  flex-grow: 1;
+}
+
+.activity-content p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.activity-content span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.activity-time {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.activity-icon.blue { background-color: #3b82f6; }
+.activity-icon.green { background-color: #10b981; }
+.activity-icon.purple { background-color: #8b5cf6; }
+.activity-icon.orange { background-color: #f97316; }

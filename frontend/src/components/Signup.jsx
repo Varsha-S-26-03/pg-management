@@ -7,7 +7,10 @@ const Signup = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     address: '',
+    age: '',
+    occupation: '',
     idType: '',
     idNumber: '',
     password: '',
@@ -81,7 +84,10 @@ const Signup = ({ onLogin }) => {
       const response = await axios.post('http://localhost:5000/api/auth/signup', {
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         address: formData.address,
+        age: formData.age,
+        occupation: formData.occupation,
         idType: formData.idType,
         idNumber: formData.idNumber,
         password: formData.password,
@@ -173,6 +179,66 @@ const Signup = ({ onLogin }) => {
           </div>
 
           <div className="form-group">
+            <label htmlFor="phone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+              </svg>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Enter your phone number"
+              autoComplete="tel"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="age">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Age
+              </label>
+              <input
+                type="number"
+                id="age"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                placeholder="Your age"
+                min="18"
+                max="100"
+                autoComplete="bday"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="occupation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 7h-3V6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
+                  <path d="M9 12l2 2 4-4"></path>
+                </svg>
+                Occupation
+              </label>
+              <input
+                type="text"
+                id="occupation"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleChange}
+                placeholder="Your occupation"
+                autoComplete="organization-title"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="address">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 0 1 18 0z"></path>
@@ -206,7 +272,7 @@ const Signup = ({ onLogin }) => {
                 value={formData.idType}
                 onChange={handleChange}
               >
-                <option value="">Select ID (optional)</option>
+                <option value="">Select ID </option>
                 <option value="aadhaar">Aadhaar Card</option>
                 <option value="pan">PAN Card</option>
               </select>
@@ -250,7 +316,6 @@ const Signup = ({ onLogin }) => {
               required
             >
               <option value="tenant">Tenant - I'm looking for a room</option>
-              <option value="owner">Owner - I manage properties</option>
               <option value="admin">Admin - System administrator</option>
             </select>
           </div>

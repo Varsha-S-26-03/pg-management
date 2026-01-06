@@ -20,6 +20,14 @@ const Dashboard = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showAdd, setShowAdd] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    address: '',
+    idType: '',
+    idNumber: ''
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -52,6 +60,39 @@ const Dashboard = ({ onLogout }) => {
   const handleLogout = () => {
     onLogout();
     navigate('/login');
+  };
+
+  const handleEdit = () => {
+    setEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      address: user.address || '',
+      idType: user.idType || '',
+      idNumber: user.idNumber || ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put('http://localhost:5000/api/auth/profile', editForm, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setUser(response.data.user);
+      setIsEditing(false);
+      alert('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert(error.response?.data?.message || 'Error updating profile');
+    }
   };
 
   if (loading) {
@@ -403,39 +444,105 @@ const Dashboard = ({ onLogout }) => {
           <div className="content-area">
             <div className="page-header">
               <h1>Settings</h1>
+              {!isEditing && (
+                <button className="btn-primary" onClick={handleEdit}>
+                  Edit Profile
+                </button>
+              )}
             </div>
             <div className="card">
               <h2>Profile Information</h2>
-              <div className="settings-section">
-                <div className="setting-item">
-                  <label>Full Name</label>
-                  <p>{user?.name}</p>
+              {isEditing ? (
+                <form onSubmit={handleSave} className="settings-form">
+                  <div className="settings-section">
+                    <div className="setting-item">
+                      <label>Full Name</label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        required
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="setting-item">
+                      <label>Email Address</label>
+                      <input
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        required
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="setting-item">
+                      <label>Address</label>
+                      <input
+                        type="text"
+                        value={editForm.address}
+                        onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="setting-item">
+                      <label>ID Type</label>
+                      <select
+                        value={editForm.idType}
+                        onChange={(e) => setEditForm({...editForm, idType: e.target.value})}
+                        className="form-input"
+                      >
+                        <option value="">Select ID Type</option>
+                        <option value="aadhaar">Aadhaar</option>
+                        <option value="pan">PAN Card</option>
+                      </select>
+                    </div>
+                    <div className="setting-item">
+                      <label>ID Number</label>
+                      <input
+                        type="text"
+                        value={editForm.idNumber}
+                        onChange={(e) => setEditForm({...editForm, idNumber: e.target.value})}
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                      <button type="submit" className="btn-primary">Save Changes</button>
+                      <button type="button" onClick={handleCancel} className="text-btn" style={{ border: '1px solid #ccc', padding: '8px 16px', borderRadius: '6px' }}>Cancel</button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <div className="settings-section">
+                  <div className="setting-item">
+                    <label>Full Name</label>
+                    <p>{user?.name}</p>
+                  </div>
+                  <div className="setting-item">
+                    <label>Email Address</label>
+                    <p>{user?.email}</p>
+                  </div>
+                  <div className="setting-item">
+                    <label>Address</label>
+                    <p>{user?.address || 'Not provided'}</p>
+                  </div>
+                  <div className="setting-item">
+                    <label>ID</label>
+                    <p>{user?.idType ? `${user.idType.toUpperCase()} • ${maskId(user?.idNumber)}` : 'Not provided'}</p>
+                  </div>
+                  <div className="setting-item">
+                    <label>User Role</label>
+                    <span className="role-badge">{user?.role}</span>
+                  </div>
+                  <div className="setting-item">
+                    <label>Member Since</label>
+                    <p>{new Date(user?.createdAt).toLocaleDateString('en-IN', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}</p>
+                  </div>
                 </div>
-                <div className="setting-item">
-                  <label>Email Address</label>
-                  <p>{user?.email}</p>
-                </div>
-                <div className="setting-item">
-                  <label>Address</label>
-                  <p>{user?.address || 'Not provided'}</p>
-                </div>
-                <div className="setting-item">
-                  <label>ID</label>
-                  <p>{user?.idType ? `${user.idType.toUpperCase()} • ${maskId(user?.idNumber)}` : 'Not provided'}</p>
-                </div>
-                <div className="setting-item">
-                  <label>User Role</label>
-                  <span className="role-badge">{user?.role}</span>
-                </div>
-                <div className="setting-item">
-                  <label>Member Since</label>
-                  <p>{new Date(user?.createdAt).toLocaleDateString('en-IN', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}

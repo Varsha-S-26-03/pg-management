@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Dashboard.css';
 
 const Tenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'admin';
   const [pending, setPending] = useState([]);
