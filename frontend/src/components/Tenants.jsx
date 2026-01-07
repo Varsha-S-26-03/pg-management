@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import config from '../config';
 import './Dashboard.css';
 
 const Tenants = () => {
@@ -14,7 +15,7 @@ const Tenants = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/tenants', {
+      const res = await axios.get(`${config.API_URL}/tenants`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Fetched tenants:', res.data.length);
@@ -30,7 +31,7 @@ const Tenants = () => {
     if (!window.confirm('Are you sure you want to remove this tenant?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/tenants/${id}`, {
+      await axios.delete(`${config.API_URL}/tenants/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTenants(prev => prev.filter(t => t._id !== id));
@@ -44,13 +45,13 @@ const Tenants = () => {
     if (!window.confirm('Approve this signup and add to tenants?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/users/${id}/approve`, null, {
+      await axios.post(`${config.API_URL}/users/${id}/approve`, null, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // remove from pending and refresh tenants
       setPending(prev => prev.filter(p => p._id !== id));
       const tokenNow = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/tenants', { headers: { Authorization: `Bearer ${tokenNow}` } });
+      const res = await axios.get(`${config.API_URL}/tenants`, { headers: { Authorization: `Bearer ${tokenNow}` } });
       setTenants(res.data);
     } catch (err) {
       console.error('Error approving user:', err);
@@ -62,7 +63,7 @@ const Tenants = () => {
     if (!window.confirm('Reject and delete this signup?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`${config.API_URL}/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setPending(prev => prev.filter(p => p._id !== id));
     } catch (err) {
       console.error('Error rejecting signup:', err);
@@ -79,7 +80,7 @@ const Tenants = () => {
         if (isAdmin) {
           try {
             const token = localStorage.getItem('token');
-            const pendingRes = await axios.get('http://localhost:5000/api/users/pending', {
+            const pendingRes = await axios.get(`${config.API_URL}/users/pending`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             setPending(pendingRes.data);

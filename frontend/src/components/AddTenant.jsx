@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import './Auth.css';
 
 const AddTenant = ({ onCreated }) => {
@@ -27,7 +28,7 @@ const AddTenant = ({ onCreated }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/tenants', form, {
+      const response = await axios.post(`${config.API_URL}/tenants`, form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('AddTenant response:', response.status, response.data);

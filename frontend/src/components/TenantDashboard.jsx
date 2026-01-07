@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import './Dashboard.css';
 
 const TenantDashboard = ({ onLogout }) => {
@@ -33,7 +34,7 @@ const TenantDashboard = ({ onLogout }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/auth/profile', {
+      const res = await axios.get(`${config.API_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setUser(res.data);
@@ -46,7 +47,7 @@ const TenantDashboard = ({ onLogout }) => {
 
   const fetchMessMenu = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/mess/menu', {
+      const res = await axios.get(`${config.API_URL}/mess/menu`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setMessMenu(res.data.menu || []);
@@ -55,7 +56,7 @@ const TenantDashboard = ({ onLogout }) => {
 
   const fetchComplaints = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/complaints', {
+      const res = await axios.get(`${config.API_URL}/complaints`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setComplaints(res.data.complaints || []);
@@ -64,7 +65,7 @@ const TenantDashboard = ({ onLogout }) => {
 
   const fetchPaymentReminders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/payments/reminders', {
+      const res = await axios.get(`${config.API_URL}/payments/reminders`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setPaymentReminders(res.data.reminders || []);
@@ -73,7 +74,7 @@ const TenantDashboard = ({ onLogout }) => {
 
   const fetchRooms = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/rooms', {
+      const res = await axios.get(`${config.API_URL}/rooms`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       setRooms(res.data.rooms || []);
@@ -91,7 +92,7 @@ const TenantDashboard = ({ onLogout }) => {
     e.preventDefault();
     try {
       await axios.post(
-        'http://localhost:5000/api/complaints',
+        `${config.API_URL}/complaints`,
         newComplaint,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );

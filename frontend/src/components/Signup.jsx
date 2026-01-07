@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import './Auth.css';
 
 const Signup = ({ onLogin }) => {
@@ -83,7 +84,7 @@ const Signup = ({ onLogin }) => {
 
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', {
+      const response = await axios.post(`${config.API_URL}/auth/signup`, {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
