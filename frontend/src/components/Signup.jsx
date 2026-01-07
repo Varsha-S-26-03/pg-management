@@ -19,6 +19,8 @@ const Signup = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -329,17 +331,40 @@ const Signup = ({ onLogin }) => {
                 </svg>
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Min. 6 characters"
-                minLength="6"
-                autoComplete="new-password"
-              />
+              <div className="password-field">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Min. 6 characters"
+                  minLength="6"
+                  autoComplete="new-password"
+                  aria-describedby="signup-password-visibility"
+                />
+                <button
+                  type="button"
+                  className="toggle-visibility-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  id="signup-password-visibility"
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-5 0-9-4-10-8a11.46 11.46 0 0 1 5.06-6.59M9.9 4.24A10.84 10.84 0 0 1 12 4c5 0 9 4 10 8a11.46 11.46 0 0 1-4.23 5.52"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
@@ -350,17 +375,40 @@ const Signup = ({ onLogin }) => {
                 </svg>
                 Confirm Password
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="Repeat password"
-                minLength="6"
-                autoComplete="new-password"
-              />
+              <div className="password-field">
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="Repeat password"
+                  minLength="6"
+                  autoComplete="new-password"
+                  aria-describedby="signup-confirm-visibility"
+                />
+                <button
+                  type="button"
+                  className="toggle-visibility-btn"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                  title={showConfirm ? 'Hide password' : 'Show password'}
+                  id="signup-confirm-visibility"
+                >
+                  {showConfirm ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-5 0-9-4-10-8a11.46 11.46 0 0 1 5.06-6.59M9.9 4.24A10.84 10.84 0 0 1 12 4c5 0 9 4 10 8a11.46 11.46 0 0 1-4.23 5.52"></path>
+                      <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
