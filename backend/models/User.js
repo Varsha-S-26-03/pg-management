@@ -60,6 +60,12 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'tenant', 'owner'],
     default: 'tenant'
   },
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
+  },
   approved: {
     type: Boolean,
     default: true
