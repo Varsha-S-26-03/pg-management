@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import './AdminDashboard.css';
 import Stats from './Stats';
 import AiRentCalculator from './AiRentCalculator';
@@ -40,7 +41,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/auth/pending-tenants', {
+      const response = await axios.get(`${config.API_URL}/auth/pending-tenants`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -57,7 +58,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/auth/all-users', {
+      const response = await axios.get(`${config.API_URL}/auth/all-users`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -73,7 +74,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/stats/admin', {
+      const response = await axios.get(`${config.API_URL}/stats/admin`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -87,7 +88,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const handleApprove = async (tenantId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:5000/api/auth/approve-tenant/${tenantId}`, {}, {
+      await axios.patch(`${config.API_URL}/auth/approve-tenant/${tenantId}`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -106,7 +107,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/auth/reject-tenant/${tenantId}`, {
+      await axios.delete(`${config.API_URL}/auth/reject-tenant/${tenantId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -127,7 +128,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     if (!window.confirm('Remove this user?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+      await axios.delete(`${config.API_URL}/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

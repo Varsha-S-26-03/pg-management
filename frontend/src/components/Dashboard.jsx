@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 import Tenants from './Tenants';
 import AddTenant from './AddTenant';
 import './Dashboard.css';
@@ -33,7 +34,7 @@ const Dashboard = ({ onLogout }) => {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/auth/profile', {
+        const response = await axios.get(`${config.API_URL}/auth/profile`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -81,7 +82,7 @@ const Dashboard = ({ onLogout }) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put('http://localhost:5000/api/auth/profile', editForm, {
+      const response = await axios.put(`${config.API_URL}/auth/profile`, editForm, {
         headers: {
           Authorization: `Bearer ${token}`
         }

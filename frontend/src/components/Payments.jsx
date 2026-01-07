@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import './Payments.css';
 
 const Payments = () => {
@@ -13,7 +14,7 @@ const Payments = () => {
   const fetchPayments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/payments', {
+      const response = await axios.get(`${config.API_URL}/payments`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

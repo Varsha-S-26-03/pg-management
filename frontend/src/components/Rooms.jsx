@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import './Rooms.css';
 
 const Rooms = () => {
@@ -49,7 +50,7 @@ const Rooms = () => {
     setSelectedTenantId('');
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users/unallocated', {
+      const response = await axios.get(`${config.API_URL}/users/unallocated`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUnallocatedTenants(response.data);
@@ -75,7 +76,7 @@ const Rooms = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/rooms/${selectedRoomForAllocation._id}/assign`, 
+      await axios.post(`${config.API_URL}/rooms/${selectedRoomForAllocation._id}/assign`, 
         { email: tenant.email }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -91,7 +92,7 @@ const Rooms = () => {
     if (!window.confirm('Remove this occupant from the room?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/rooms/${roomId}/tenants/${tenantId}`, {
+      await axios.delete(`${config.API_URL}/rooms/${roomId}/tenants/${tenantId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchRooms();
@@ -103,7 +104,7 @@ const Rooms = () => {
     if (!window.confirm('Delete this room?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/rooms/${roomId}`, {
+      await axios.delete(`${config.API_URL}/rooms/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await fetchRooms();
@@ -142,7 +143,7 @@ const Rooms = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/rooms', {
+      await axios.post(`${config.API_URL}/rooms`, {
         roomNumber,
         type, // Type is already normalized by the select input
         capacity: Number(capacity),
@@ -164,7 +165,7 @@ const Rooms = () => {
   const fetchRooms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/rooms', {
+      const response = await axios.get(`${config.API_URL}/rooms`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
