@@ -1,8 +1,38 @@
 const express = require('express');
 const User = require('../models/User');
+const Room = require('../models/Room');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
+
+// Get unallocated tenants (admin only)
+router.get('/unallocated', authMiddleware, async (req, res) => {
+  try {
+    const requestingUser = await User.findById(req.userId);
+    if (!requestingUser || requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: admins only' });
+    }
+
+    // 1. Get all rooms and collect allocated tenant IDs
+    const rooms = await Room.find({}).select('tenants');
+    const allocatedTenantIds = new Set();
+    rooms.forEach(room => {
+      if (room.tenants && Array.isArray(room.tenants)) {
+        room.tenants.forEach(id => allocatedTenantIds.add(id.toString()));
+      }
+    });
+
+    // 2. Find all tenants who are approved
+    const allTenants = await User.find({ role: 'tenant', approved: true }).select('name email phone');
+
+    // 3. Filter out allocated tenants
+    const unallocated = allTenants.filter(t => !allocatedTenantIds.has(t._id.toString()));
+
+    res.json(unallocated);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 // Get pending tenant signups (admin only)
 router.get('/pending', authMiddleware, async (req, res) => {

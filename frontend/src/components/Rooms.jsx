@@ -6,6 +6,11 @@ const Rooms = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
+  const [unallocatedTenants, setUnallocatedTenants] = useState([]);
+  const [selectedRoomForAllocation, setSelectedRoomForAllocation] = useState(null);
+  const [selectedTenantId, setSelectedTenantId] = useState('');
+
   const [newRoom, setNewRoom] = useState({
     roomNumber: '',
     type: 'single',
@@ -38,19 +43,50 @@ const Rooms = () => {
     if (['dormitory', 'dorm', '4', 'four', 'many', 'multiple'].includes(s)) return 'dormitory';
     return null;
   };
-  const allocateTenant = async (room) => {
-    const email = window.prompt('Enter tenant email to allocate');
-    if (!email) return;
+
+  const openAllocateModal = async (room) => {
+    setSelectedRoomForAllocation(room);
+    setSelectedTenantId('');
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/rooms/${room._id}/assign`, { email }, {
+      const response = await axios.get('http://localhost:5000/api/users/unallocated', {
         headers: { Authorization: `Bearer ${token}` }
       });
+      setUnallocatedTenants(response.data);
+      setIsAllocateModalOpen(true);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to fetch unallocated tenants');
+    }
+  };
+
+  const handleAllocateSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedTenantId) {
+      alert('Please select a tenant');
+      return;
+    }
+    
+    // Find tenant email from ID (backend expects email currently based on previous code, 
+    // but let's check if we can send ID or if we need to send email. 
+    // The previous code used: axios.post(..., { email })
+    // So we need to find the email of the selected tenant.
+    const tenant = unallocatedTenants.find(t => t._id === selectedTenantId);
+    if (!tenant) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`http://localhost:5000/api/rooms/${selectedRoomForAllocation._id}/assign`, 
+        { email: tenant.email }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setIsAllocateModalOpen(false);
       await fetchRooms();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to allocate');
     }
   };
+
   const removeTenant = async (roomId, tenantId) => {
     if (!window.confirm('Remove this occupant from the room?')) return;
     try {
@@ -201,7 +237,7 @@ const Rooms = () => {
                         )}
                         <div className="room-actions">
                           {vacantCount > 0 && (
-                            <button className="btn-primary success" onClick={() => allocateTenant(room)}>Allocate</button>
+                            <button className="btn-primary success" onClick={() => openAllocateModal(room)}>Allocate</button>
                           )}
                           <button className="btn-primary danger" onClick={() => deleteRoom(room._id)}>Delete</button>
                         </div>
@@ -278,6 +314,41 @@ const Rooms = () => {
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn-primary">Create Room</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {isAllocateModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Allocate Room {selectedRoomForAllocation?.roomNumber}</h2>
+              <button className="close-btn" onClick={() => setIsAllocateModalOpen(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleAllocateSubmit}>
+              <div className="form-group">
+                <label>Select Tenant</label>
+                {unallocatedTenants.length === 0 ? (
+                  <p style={{ color: '#6b7280', padding: '8px 0' }}>No unallocated tenants available.</p>
+                ) : (
+                  <select 
+                    value={selectedTenantId} 
+                    onChange={(e) => setSelectedTenantId(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select a tenant --</option>
+                    {unallocatedTenants.map(tenant => (
+                      <option key={tenant._id} value={tenant._id}>
+                        {tenant.name} ({tenant.email})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsAllocateModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" disabled={unallocatedTenants.length === 0}>Allocate</button>
               </div>
             </form>
           </div>
