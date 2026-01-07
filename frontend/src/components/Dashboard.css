@@ -684,6 +684,118 @@
   padding: 60px 20px;
 }
 
+/* ============ Complaints Admin Page ============ */
+.complaints-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.complaint-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.complaint-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.complaint-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+}
+
+.complaint-meta {
+  color: #6b7280;
+  font-size: 12px;
+  margin: 0;
+}
+
+.complaint-description {
+  color: #374151;
+  margin: 8px 0 12px 0;
+  font-size: 14px;
+}
+
+.complaint-response {
+  border-left: 3px solid #667eea;
+  background: #f3f4f6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.complaint-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-secondary {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.badge-status {
+  color: #fff;
+}
+
+/* Red → Open, Yellow → In-Progress, Green → Closed */
+.badge-open {
+  background: #ef4444;
+}
+
+.badge-inprogress {
+  background: #f59e0b;
+}
+
+.badge-closed {
+  background: #10b981;
+}
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: min(520px, 100%);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .dashboard-grid {
@@ -708,5 +820,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .complaint-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

@@ -9,6 +9,7 @@ import RecentActivities from './RecentActivities';
 import QuickStats from './QuickStats';
 import Rooms from './Rooms';
 import Payments from './Payments';
+import ComplaintAdmin from './Complaint';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -262,6 +263,16 @@ const AdminDashboard = ({ user, onLogout }) => {
               <line x1="1" y1="10" x2="23" y2="10"></line>
             </svg>
             Payments
+          </button>
+
+          <button 
+            className={activeTab === 'complaints' ? 'active' : ''} 
+            onClick={() => setActiveTab('complaints')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Complaints
           </button>
 
           <button 
@@ -609,6 +620,7 @@ const AdminDashboard = ({ user, onLogout }) => {
 
         {activeTab === 'rooms' && <Rooms />}
         {activeTab === 'payments' && <Payments />}
+        {activeTab === 'complaints' && <ComplaintAdmin />}
 
         {activeTab === 'settings' && (
           <div className="content-area">

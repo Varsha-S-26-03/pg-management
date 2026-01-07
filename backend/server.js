@@ -9,6 +9,7 @@ const roomRoutes = require('./routers/rooms');
 const paymentRoutes = require('./routers/payments');
 const tenantRoutes = require('./routers/tenants');
 const usersRoutes = require('./routers/users');
+const complaintRoutes = require('./routers/complaints');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/rooms', roomRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/complaints', complaintRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
