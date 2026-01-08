@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import AdminDashboard from './components/AdminDashboard';
@@ -9,21 +9,11 @@ import Tenants from './components/Tenants';
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
+  const [user, setUser] = useState(() => {
     const userData = localStorage.getItem('user');
-    if (token) {
-      setIsAuthenticated(true);
-      if (userData) {
-        setUser(JSON.parse(userData));
-      }
-    }
-    setLoading(false);
-  }, []);
+    return userData ? JSON.parse(userData) : null;
+  });
 
   const handleLogin = (token, user) => {
     localStorage.setItem('token', token);
@@ -39,33 +29,35 @@ function App() {
     setUser(null);
   };
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner"></div>
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   return (
     <Router>
       <Routes>
         <Route 
           path="/login" 
           element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" /> : 
+            isAuthenticated ?
+            (user?.role === 'tenant' ? <Navigate to="/tenant/dashboard" /> : <Navigate to="/dashboard" />) :
             <Login onLogin={handleLogin} />
           } 
         />
         <Route 
           path="/signup" 
           element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" /> : 
+            isAuthenticated ?
+            (user?.role === 'tenant' ? <Navigate to="/tenant/dashboard" /> : <Navigate to="/dashboard" />) :
             <Signup onLogin={handleLogin} />
           } 
+        />
+        <Route
+          path="/tenant/dashboard"
+          element={
+            isAuthenticated ?
+            (user?.role === 'tenant' ?
+              <TenantDashboard user={user} onLogout={handleLogout} /> :
+              <Navigate to="/dashboard" />
+            ) :
+            <Navigate to="/login" />
+          }
         />
         <Route
           path="/dashboard"
@@ -73,7 +65,7 @@ function App() {
             isAuthenticated ?
             (user?.role === 'admin' ?
               <AdminDashboard user={user} onLogout={handleLogout} /> :
-              <TenantDashboard user={user} onLogout={handleLogout} />
+              <Navigate to="/tenant/dashboard" />
             ) :
             <Navigate to="/login" />
           }

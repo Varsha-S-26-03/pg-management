@@ -81,6 +81,28 @@
 
 .main-content {
   flex-grow: 1;
+}
+
+.admin-dashboard .sidebar {
+  position: relative;
+  height: auto;
+}
+.admin-dashboard .main-content {
+  margin-left: 0;
+}
+.sidebar.minimized .sidebar-nav button {
+  justify-content: center;
+}
+.sidebar.minimized .nav-label {
+  display: none;
+}
+.sidebar.minimized .sidebar-header .logo {
+  font-size: 0;
+}
+.sidebar.minimized .sidebar-header .logo svg {
+  width: 24px;
+  height: 24px;
+}
   padding: 32px; /* Increased padding */
   overflow-y: auto;
   background: linear-gradient(135deg, #f0f4f8 0%, #e6e9f0 100%); /* Subtle gradient */

@@ -36,14 +36,6 @@ const Rooms = () => {
     if (t === 'triple') return '3 share';
     return 'Dormitory';
   };
-  const normalizeType = (val) => {
-    const s = String(val || '').toLowerCase().trim();
-    if (['single', '1', 'single share'].includes(s)) return 'single';
-    if (['double', '2', 'two', '2 share', 'double share'].includes(s)) return 'double';
-    if (['triple', '3', 'three', '3 share', 'triple share'].includes(s)) return 'triple';
-    if (['dormitory', 'dorm', '4', 'four', 'many', 'multiple'].includes(s)) return 'dormitory';
-    return null;
-  };
 
   const openAllocateModal = async (room) => {
     setSelectedRoomForAllocation(room);
