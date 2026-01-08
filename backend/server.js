@@ -12,6 +12,7 @@ const tenantRoutes = require('./routers/tenants');
 const usersRoutes = require('./routers/users');
 const complaintRoutes = require('./routers/complaints');
 const moveOutRoutes = require('./routers/moveouts');
+const messRoutes = require('./routers/mess');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/moveouts', moveOutRoutes);
+app.use('/api/mess', messRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

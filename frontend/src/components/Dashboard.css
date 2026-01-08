@@ -414,6 +414,326 @@
   }
 }
 
+/* ============ Admin Mess Menu Styling ============ */
+.admin-mess-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-select {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-top: 8px;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.btn-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.admin-mess-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-mess-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.admin-mess-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-mess-card-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.admin-mess-meta {
+  color: #6b7280;
+  font-size: 13px;
+  margin: 0;
+}
+
+.admin-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-status-badge.active {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.admin-status-badge.inactive {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #7f1d1d;
+  border: 1px solid #dc2626;
+}
+
+.admin-meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-meal-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.admin-meal-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
+}
+
+.admin-meal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.admin-meal-icon.breakfast-icon {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.admin-meal-icon.lunch-icon {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.admin-meal-icon.dinner-icon {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+}
+
+.admin-meal-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-meal-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.admin-meal-dish {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.admin-veg-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-veg-badge.veg {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.admin-veg-badge.non-veg {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #7f1d1d;
+  border: 1px solid #dc2626;
+}
+
+.admin-mess-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-activate {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+}
+
+.btn-deactivate {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+@media (max-width: 768px) {
+  .admin-mess-form {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  
+  .admin-meal-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .admin-meal-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .admin-mess-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .admin-mess-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 /* Dashboard Grid */
 .dashboard-grid {
   display: grid;
@@ -841,5 +1161,226 @@
   .complaint-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* ============ Mess Menu Attractive Styling ============ */
+.mess-menu-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.mess-menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.mess-menu-card.today-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 1px solid #667eea;
+}
+
+.mess-menu-card.today-card .mess-menu-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mess-menu-card.today-card .meal-name,
+.mess-menu-card.today-card .meal-dish,
+.mess-menu-card.today-card .day-name {
+  color: white;
+}
+
+.mess-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.day-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.day-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.today-badge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-info {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.mess-menu-card.today-card .date-info {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.meal-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateX(4px);
+}
+
+.mess-menu-card.today-card .meal-item {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mess-menu-card.today-card .meal-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.meal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.breakfast-icon {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.lunch-icon {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.dinner-icon {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+}
+
+.mess-menu-card.today-card .meal-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.meal-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.meal-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.meal-dish {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.veg-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.veg-badge.veg {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.veg-badge.non-veg {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #7f1d1d;
+  border: 1px solid #dc2626;
+}
+
+.mess-menu-card.today-card .veg-badge.veg {
+  background: rgba(16, 185, 129, 0.2);
+  color: white;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.mess-menu-card.today-card .veg-badge.non-veg {
+  background: rgba(220, 38, 38, 0.2);
+  color: white;
+  border: 1px solid rgba(220, 38, 38, 0.5);
+}
+
+@media (max-width: 768px) {
+  .mess-menu-card {
+    padding: 20px;
+  }
+  
+  .meal-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .meal-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .mess-menu-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .day-name {
+    font-size: 18px;
   }
 }
