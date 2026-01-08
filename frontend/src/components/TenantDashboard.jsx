@@ -2,6 +2,7 @@ import { useState, useEffect, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
+import TenantComplaints from './TenantComplaints';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
@@ -29,12 +30,6 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const [moveOutDate, setMoveOutDate] = useState('');
   const [moveOutReason, setMoveOutReason] = useState('');
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
-  const [newComplaint, setNewComplaint] = useState({
-    title: '',
-    description: '',
-    category: '',
-    priority: 'medium'
-  });
 
   const navigate = useNavigate();
 
@@ -59,6 +54,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       dispatch({ type: 'SET_COMPLAINTS', payload: res.data.complaints });
     } catch (err) { console.error('Failed to load complaints', err); }
   };
+  
 
   const fetchPayments = async () => {
     try {
@@ -94,26 +90,6 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     navigate('/login');
   };
 
-  const handleSubmitComplaint = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(
-        `${config.API_URL}/complaints`,
-        newComplaint,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setNewComplaint({
-        title: '',
-        description: '',
-        category: '',
-        priority: 'medium'
-      });
-      fetchComplaints();
-      alert('Complaint submitted');
-    } catch {
-      alert('Error submitting complaint');
-    }
-  };
 
   const handleSubmitMoveOut = async (e) => {
     e.preventDefault();
@@ -133,12 +109,6 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   };
 
   /* ================= HELPERS ================= */
-  const getStatusColor = (status) =>
-    status === 'resolved' ? 'green' : status === 'in-progress' ? 'blue' : 'orange';
-
-  const getPriorityColor = (p) =>
-    p === 'high' || p === 'urgent' ? 'red' : p === 'medium' ? 'orange' : 'green';
-
   const findTenantRoom = () => {
     if (!user || state.rooms.length === 0) return null;
     const uid = user.id || user._id;
@@ -394,33 +364,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
 
         {activeTab === 'complaints' && (
           <div className="content-area">
-            <div className="page-header">
-              <h1>Complaints</h1>
-            </div>
-
-            <form onSubmit={handleSubmitComplaint}>
-              <input
-                placeholder="Title"
-                value={newComplaint.title}
-                onChange={e => setNewComplaint({ ...newComplaint, title: e.target.value })}
-                required
-              />
-              <textarea
-                placeholder="Description"
-                value={newComplaint.description}
-                onChange={e => setNewComplaint({ ...newComplaint, description: e.target.value })}
-                required
-              />
-              <button type="submit">Submit</button>
-            </form>
-
-            {state.complaints.map(c => (
-              <div key={c._id}>
-                <h3>{c.title}</h3>
-                <span className={getStatusColor(c.status)}>{c.status}</span>
-                <span className={getPriorityColor(c.priority)}>{c.priority}</span>
-              </div>
-            ))}
+            <TenantComplaints />
           </div>
         )}
 

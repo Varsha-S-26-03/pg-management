@@ -13,7 +13,7 @@ const complaintSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['maintenance', 'cleanliness', 'food', 'facilities', 'noise', 'other'],
+    enum: ['maintenance', 'water', 'electricity', 'cleanliness', 'food', 'security', 'other'],
     required: true
   },
   priority: {
@@ -23,7 +23,7 @@ const complaintSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'in-progress', 'resolved', 'closed'],
+    enum: ['pending', 'in-progress', 'resolved', 'rejected', 'closed'],
     default: 'pending'
   },
   roomNumber: {
@@ -65,10 +65,8 @@ const complaintSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field before saving
-complaintSchema.pre('save', function(next) {
+complaintSchema.pre('save', function() {
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Complaint', complaintSchema);

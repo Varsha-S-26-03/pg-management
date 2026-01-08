@@ -8,6 +8,7 @@ import AddTenant from './components/AddTenant';
 import Tenants from './components/Tenants';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import { ToastContainer } from './components/Toast';
 import './App.css';
 
 function App() {
@@ -110,6 +111,7 @@ function App() {
         />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
+      <ToastContainer />
     </Router>
   );
 }
