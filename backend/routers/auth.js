@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const PendingTenant = require('../models/PendingTenant');
 const authMiddleware = require('../middleware/auth');
@@ -164,6 +166,114 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Login error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* =========================
+   FORGOT PASSWORD
+========================= */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Always respond success to avoid user enumeration
+    const successPayload = { message: 'If an account exists, a reset link will be sent.' };
+
+    if (!user) {
+      return res.json(successPayload);
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = Date.now() + 1000 * 60 * 60; // 1 hour
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+    // Attempt to send email if SMTP env is configured; otherwise log
+    try {
+      if (process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT),
+          secure: Number(process.env.SMTP_PORT) === 465,
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          }
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: user.email,
+          subject: 'Password Reset Instructions',
+          html: `
+            <p>You requested a password reset.</p>
+            <p>Click the link below to reset your password (valid for 1 hour):</p>
+            <p><a href="${resetUrl}">${resetUrl}</a></p>
+            <p>If you did not request this, you can ignore this email.</p>
+          `
+        });
+      } else {
+        console.log('📧 Reset link (no SMTP configured):', resetUrl);
+      }
+    } catch (mailErr) {
+      console.error('❌ Failed to send reset email:', mailErr.message);
+    }
+
+    return res.json(successPayload);
+  } catch (error) {
+    console.error('❌ Forgot password error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* =========================
+   RESET PASSWORD
+========================= */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+    if (confirmPassword && password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset link is invalid or expired' });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.json({ message: 'Password reset successful. You can now log in.' });
+  } catch (error) {
+    console.error('❌ Reset password error:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 });

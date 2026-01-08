@@ -6,6 +6,8 @@ import AdminDashboard from './components/AdminDashboard';
 import TenantDashboard from './components/TenantDashboard';
 import AddTenant from './components/AddTenant';
 import Tenants from './components/Tenants';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
 import './App.css';
 
 function App() {
@@ -46,6 +48,22 @@ function App() {
             isAuthenticated ?
             (user?.role === 'tenant' ? <Navigate to="/tenant/dashboard" /> : <Navigate to="/dashboard" />) :
             <Signup onLogin={handleLogin} />
+          } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            isAuthenticated ? 
+            <Navigate to="/dashboard" /> : 
+            <ForgotPassword />
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
+            isAuthenticated ? 
+            <Navigate to="/dashboard" /> : 
+            <ResetPassword />
           } 
         />
         <Route
