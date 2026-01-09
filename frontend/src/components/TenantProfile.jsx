@@ -31,11 +31,7 @@ const TenantProfile = ({ user: initialUser }) => {
       const initialFormData = {
         phone: res.data.phone || '',
         gender: res.data.gender || '',
-        dateOfBirth: res.data.dateOfBirth ? res.data.dateOfBirth.substring(0, 10) : '',
-        profileRole: res.data.profileRole || '',
-        emergencyContact: res.data.emergencyContact?.name && res.data.emergencyContact?.phone 
-          ? `${res.data.emergencyContact.name} (${res.data.emergencyContact.phone})`
-          : ''
+        dateOfBirth: res.data.dateOfBirth ? res.data.dateOfBirth.substring(0, 10) : ''
       };
       console.log('Setting initial form data:', initialFormData);
       setFormData(initialFormData);
@@ -71,38 +67,14 @@ const TenantProfile = ({ user: initialUser }) => {
   // Save profile changes
   const handleSave = async () => {
     try {
-      // Parse emergency contact from formatted string
-      let emergencyContact;
-      const emergencyContactMatch = formData.emergencyContact.match(/^(.+?) \((.+?)\)$/);
-      if (emergencyContactMatch) {
-        emergencyContact = {
-          name: emergencyContactMatch[1].trim(),
-          phone: emergencyContactMatch[2].trim(),
-          relation: ''
-        };
-      } else if (formData.emergencyContact.trim()) {
-        // If user enters just text without parentheses format, treat as name
-        emergencyContact = {
-          name: formData.emergencyContact.trim(),
-          phone: '',
-          relation: ''
-        };
-      } else {
-        emergencyContact = { name: '', phone: '', relation: '' };
-      }
-
       const saveData = {
-        phone: formData.phone,
-        emergencyContact: emergencyContact
+        phone: formData.phone
       };
       if (formData.gender) {
         saveData.gender = formData.gender;
       }
       if (formData.dateOfBirth) {
         saveData.dateOfBirth = formData.dateOfBirth;
-      }
-      if (formData.profileRole) {
-        saveData.profileRole = formData.profileRole;
       }
 
       console.log('Saving profile with data:', saveData);
@@ -116,9 +88,7 @@ const TenantProfile = ({ user: initialUser }) => {
         ...prev, 
         phone: formData.phone,
         gender: formData.gender || prev.gender,
-        dateOfBirth: formData.dateOfBirth || prev.dateOfBirth,
-        profileRole: formData.profileRole || prev.profileRole,
-        emergencyContact: emergencyContact
+        dateOfBirth: formData.dateOfBirth || prev.dateOfBirth
       }));
       setIsEditing(false);
       showToast('Profile updated successfully!', 'success');
@@ -136,11 +106,7 @@ const TenantProfile = ({ user: initialUser }) => {
     const resetData = {
       phone: profile.phone || '',
       gender: profile.gender || '',
-      dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().substring(0, 10) : '',
-      profileRole: profile.profileRole || '',
-      emergencyContact: profile.emergencyContact?.name && profile.emergencyContact?.phone 
-        ? `${profile.emergencyContact.name} (${profile.emergencyContact.phone})`
-        : ''
+      dateOfBirth: profile.dateOfBirth ? new Date(profile.dateOfBirth).toISOString().substring(0, 10) : ''
     };
     console.log('Reset form data:', resetData);
     setFormData(resetData);
@@ -325,29 +291,6 @@ const TenantProfile = ({ user: initialUser }) => {
                 )}
               </div>
 
-              <div className="field-group">
-                <label>Emergency Contact</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={(e) => {
-                      console.log('Emergency contact input changed:', e.target.value);
-                      handleChange(e);
-                    }}
-                    className="form-input"
-                    placeholder="John Doe (9876543210)"
-                  />
-                ) : (
-                  <div className="field-value">
-                    {profile.emergencyContact?.name && profile.emergencyContact?.phone 
-                      ? `${profile.emergencyContact.name} (${profile.emergencyContact.phone})`
-                      : 'Not provided'
-                    }
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -389,33 +332,8 @@ const TenantProfile = ({ user: initialUser }) => {
           <div className="profile-fields">
             <div className="field-group">
               <label>Role</label>
-              {isEditing ? (
-                <select
-                  name="profileRole"
-                  value={formData.profileRole || ''}
-                  onChange={handleChange}
-                  className="form-input"
-                >
-                  <option value="">Select role</option>
-                  <option value="tenant">Tenant</option>
-                  <option value="owner">Owner</option>
-                  <option value="admin">Admin</option>
-                </select>
-              ) : (
-                <div className="field-value read-only">
-                  {profile.profileRole
-                    ? profile.profileRole.charAt(0).toUpperCase() + profile.profileRole.slice(1)
-                    : 'Tenant'}
-                </div>
-              )}
-            </div>
-
-            <div className="field-group">
-              <label>Joining Date</label>
-              <div className="field-value">
-                {profile.joiningDate
-                  ? new Date(profile.joiningDate).toLocaleDateString()
-                  : (profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Not available')}
+              <div className="field-value read-only">
+                Tenant
               </div>
             </div>
 

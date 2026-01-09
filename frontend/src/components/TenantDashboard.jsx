@@ -4,6 +4,7 @@ import axios from 'axios';
 import config from '../config';
 import TenantComplaints from './TenantComplaints';
 import TenantProfile from './TenantProfile';
+import SharedRooms from './SharedRooms';
 import './Dashboard.css';
 import './AdminDashboard.css';
 

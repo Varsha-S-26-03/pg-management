@@ -110,6 +110,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 
     const effectiveJoiningDate = user.joiningDate || user.createdAt;
+    const effectiveIsActive = typeof user.isActive === 'boolean' ? user.isActive : true;
 
     let tenantDetails = {};
     if (user.role === 'tenant') {
@@ -131,7 +132,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       role: user.role,
       profileRole: user.profileRole,
       joiningDate: effectiveJoiningDate,
-      isActive: user.isActive,
+      isActive: effectiveIsActive,
       approved: user.approved,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,

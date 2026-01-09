@@ -40,12 +40,12 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
   const fetchRooms = async () => {
     try {
       const token = getToken();
-      const response = await axios.get(`${config.API_URL}/rooms`, {
+      const res = await axios.get(`${config.API_URL}/rooms`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setRooms(response.data.rooms);
+      setRooms(res.data.rooms);
     } catch (error) {
       console.error('Error fetching rooms:', error);
     } finally {
@@ -57,10 +57,10 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
     if (userRole === 'tenant') {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`${config.API_URL}/room-requests/my-requests`, {
+        const res = await axios.get(`${config.API_URL}/room-requests/my-requests`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const requestedRoomIds = new Set(response.data.requests.map(req => req.roomId._id));
+        const requestedRoomIds = new Set(res.data.requests.map(req => req.roomId._id));
         setRequestedRooms(requestedRoomIds);
       } catch (error) {
         console.error('Error fetching room requests:', error);
@@ -140,7 +140,7 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
   const handleApproveRequest = async (requestId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.patch(`${config.API_URL}/room-requests/${requestId}/status`,
+      await axios.patch(`${config.API_URL}/room-requests/${requestId}/status`,
         { status: 'Approved' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -158,7 +158,7 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
   const handleRejectRequest = async (requestId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.patch(`${config.API_URL}/room-requests/${requestId}/status`,
+      await axios.patch(`${config.API_URL}/room-requests/${requestId}/status`,
         { status: 'Rejected' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -294,7 +294,6 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
               <div className="rooms-grid">
                 {list.map((room) => {
                   const occupiedCount = Array.isArray(room.tenants) ? room.tenants.length : (room.occupied || 0);
-                  const vacantCount = Math.max(0, (room.capacity || 0) - occupiedCount);
                   const shareLabel = shareFromType(room.type);
                   const availableBeds = getAvailableBeds(room);
                   const isRequested = isRoomRequested(room._id);

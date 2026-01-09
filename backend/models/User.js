@@ -24,6 +24,13 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  gender: {
+    type: String,
+    trim: true
+  },
+  dateOfBirth: {
+    type: Date
+  },
   age: {
     type: Number,
     min: 18,
@@ -70,9 +77,29 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  lastLogin: {
+    type: Date
+  },
+  profileRole: {
+    type: String,
+    trim: true
+  },
+  profilePhoto: {
+    type: String,
+    trim: true
+  },
+  emergencyContact: {
+    name: { type: String, trim: true },
+    phone: { type: String, trim: true },
+    relation: { type: String, trim: true }
   }
 });
 
