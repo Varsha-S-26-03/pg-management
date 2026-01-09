@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
 import TenantComplaints from './TenantComplaints';
+import SharedRooms from './SharedRooms';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
@@ -14,7 +15,8 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     complaints: [],
     payments: [],
     rooms: [],
-    moveOut: null
+    moveOut: null,
+    roomRequests: []
   };
   const reducer = (s, a) => {
     switch (a.type) {
@@ -23,6 +25,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       case 'SET_PAYMENTS': return { ...s, payments: a.payload || [] };
       case 'SET_ROOMS': return { ...s, rooms: a.payload || [] };
       case 'SET_MOVEOUT': return { ...s, moveOut: a.payload || null };
+      case 'SET_ROOM_REQUESTS': return { ...s, roomRequests: a.payload || [] };
       default: return s;
     }
   };
@@ -83,6 +86,15 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     } catch (err) { console.error('Failed to load move-out status', err); }
   };
 
+  const fetchRoomRequests = async () => {
+    try {
+      const res = await axios.get(`${config.API_URL}/room-requests/my-requests`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      dispatch({ type: 'SET_ROOM_REQUESTS', payload: res.data.requests });
+    } catch (err) { console.error('Failed to load room requests', err); }
+  };
+
   /* ================= ACTIONS ================= */
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -105,6 +117,19 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       alert('Move-out request submitted');
     } catch {
       alert('Error submitting move-out request');
+    }
+  };
+
+  const handleCancelRoomRequest = async (requestId) => {
+    try {
+      await axios.delete(`${config.API_URL}/room-requests/${requestId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      alert('Room request cancelled successfully');
+      fetchRoomRequests();
+    } catch (err) {
+      console.error('Failed to cancel room request:', err);
+      alert('Failed to cancel room request');
     }
   };
 
@@ -166,6 +191,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       fetchPayments();
     } else if (activeTab === 'rooms') {
       fetchRooms();
+      fetchRoomRequests();
     } else if (activeTab === 'payments') {
       fetchPayments();
       fetchRooms();
@@ -352,13 +378,59 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
         {activeTab === 'rooms' && (
           <div className="content-area">
             <div className="page-header">
-              <h1>Rooms</h1>
+              <h1>Room Management</h1>
             </div>
-            {state.rooms.map(room => (
-              <div key={room._id}>
-                Room {room.roomNumber} - {room.occupied ? 'Occupied' : 'Available'}
-              </div>
-            ))}
+            
+            {/* Room Requests Section */}
+            <div className="card" style={{ marginBottom: '24px' }}>
+              <h2>Your Room Requests</h2>
+              {state.roomRequests.length === 0 ? (
+                <p>No room requests found</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {state.roomRequests.map((request) => (
+                    <div key={request._id} style={{ 
+                      padding: '12px', 
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: '600' }}>Room {request.roomId?.roomNumber || 'Unknown'}</div>
+                        <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                          Status: <span style={{ 
+                            color: request.status === 'Approved' ? '#10b981' : 
+                                   request.status === 'Rejected' ? '#ef4444' : '#f59e0b',
+                            fontWeight: '500'
+                          }}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                          Requested: {new Date(request.requestedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div>
+                        {request.status === 'Pending' && (
+                          <button 
+                            onClick={() => handleCancelRoomRequest(request._id)}
+                            className="btn-secondary"
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Available Rooms */}
+            <SharedRooms userRole="tenant" />
           </div>
         )}
 

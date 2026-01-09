@@ -100,7 +100,6 @@ function App() {
             <Navigate to="/login" />
           }
         />
-
         <Route 
           path="/tenants/add" 
           element={

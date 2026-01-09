@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  currentRoom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Room',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

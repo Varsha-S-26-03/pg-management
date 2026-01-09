@@ -8,6 +8,7 @@ import AiRentCalculator from './AiRentCalculator';
 import RecentActivities from './RecentActivities';
 import QuickStats from './QuickStats';
 import Rooms from './Rooms';
+import SharedRooms from './SharedRooms';
 import Payments from './Payments';
 import ComplaintAdmin from './Complaint';
 
@@ -26,10 +27,6 @@ const AdminDashboard = ({ user, onLogout }) => {
     pendingPayments:0
   });
   const [selectedUser, setSelectedUser] = useState(null);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const notifBtnRef = useRef(null);
-  const notifPanelRef = useRef(null);
 
   useEffect(() => {
     if (activeTab === 'approvals') {
@@ -89,46 +86,6 @@ const AdminDashboard = ({ user, onLogout }) => {
       console.error('Error fetching stats:', error);
     }
   };
-
-  useEffect(() => {
-    const items = [];
-    if (stats.pendingApprovals > 0) {
-      items.push({
-        id: 'approvals',
-        type: 'approval',
-        message: `You have ${stats.pendingApprovals} tenant approval${stats.pendingApprovals !== 1 ? 's' : ''} pending`,
-        timestamp: new Date().toISOString()
-      });
-    }
-    if (stats.pendingPayments > 0) {
-      items.push({
-        id: 'payments',
-        type: 'alert',
-        message: `${stats.pendingPayments} payment reminder${stats.pendingPayments !== 1 ? 's' : ''} due`,
-        timestamp: new Date().toISOString()
-      });
-    }
-    items.push({
-      id: 'system',
-      type: 'system',
-      message: 'System update: Dashboard metrics refreshed',
-      timestamp: new Date().toISOString()
-    });
-    setNotifications(items);
-  }, [stats]);
-
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (!notificationsOpen) return;
-      const btn = notifBtnRef.current;
-      const panel = notifPanelRef.current;
-      if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
-        setNotificationsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [notificationsOpen]);
 
   const handleApprove = async (tenantId) => {
     try {
@@ -317,77 +274,12 @@ const AdminDashboard = ({ user, onLogout }) => {
             <input type="text" placeholder="Search rooms, tenants, payments..." />
           </div>
           <div className="top-bar-actions">
-            <button
-              className="icon-btn"
-              onClick={() => setNotificationsOpen((v) => !v)}
-              aria-haspopup="dialog"
-              aria-expanded={notificationsOpen}
-              aria-controls="notifications-panel"
-              ref={notifBtnRef}
-            >
+            <button className="icon-btn" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
               </svg>
-              <span className="badge">3</span>
             </button>
-            {notificationsOpen && (
-              <div
-                className="notifications-panel"
-                id="notifications-panel"
-                role="dialog"
-                aria-label="Notifications"
-                ref={notifPanelRef}
-              >
-                <div className="notifications-header">
-                  <span>Notifications</span>
-                  <button
-                    className="close-btn"
-                    type="button"
-                    onClick={() => setNotificationsOpen(false)}
-                    aria-label="Close notifications"
-                    title="Close"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-                <ul className="notifications-list">
-                  {notifications.length === 0 ? (
-                    <li className="notification-item empty">No notifications</li>
-                  ) : (
-                    notifications.map((n) => (
-                      <li key={n.id} className={`notification-item ${n.type}`}>
-                        <div className="notification-icon">
-                          {n.type === 'approval' ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M9 12l2 2 4-4"></path>
-                              <circle cx="12" cy="12" r="9"></circle>
-                            </svg>
-                          ) : n.type === 'alert' ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                              <line x1="12" y1="9" x2="12" y2="13"></line>
-                              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                            </svg>
-                          ) : (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M3 12h18M12 3v18"></path>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="notification-content">
-                          <span className="message">{n.message}</span>
-                          <span className="timestamp">{new Date(n.timestamp).toLocaleString()}</span>
-                        </div>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>
-            )}
           </div>
         </header>
 
@@ -618,7 +510,7 @@ const AdminDashboard = ({ user, onLogout }) => {
           </div>
         )}
 
-        {activeTab === 'rooms' && <Rooms />}
+        {activeTab === 'rooms' && <SharedRooms userRole="admin" />}
         {activeTab === 'payments' && <Payments />}
         {activeTab === 'complaints' && <ComplaintAdmin />}
 
