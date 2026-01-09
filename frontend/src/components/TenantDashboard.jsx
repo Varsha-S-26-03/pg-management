@@ -12,6 +12,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const initialState = {
     messMenu: [],
+    messMenuStatus: 'inactive',
     complaints: [],
     payments: [],
     rooms: [],
@@ -21,6 +22,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const reducer = (s, a) => {
     switch (a.type) {
       case 'SET_MENU': return { ...s, messMenu: a.payload || [] };
+      case 'SET_MENU_STATUS': return { ...s, messMenuStatus: a.payload || 'inactive' };
       case 'SET_COMPLAINTS': return { ...s, complaints: a.payload || [] };
       case 'SET_PAYMENTS': return { ...s, payments: a.payload || [] };
       case 'SET_ROOMS': return { ...s, rooms: a.payload || [] };
@@ -42,10 +44,11 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
 
   const fetchMessMenu = async () => {
     try {
-      const res = await axios.get(`${config.API_URL}/mess/menu`, {
+      const res = await axios.get(`${config.API_URL}/mess/menu/active`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
-      dispatch({ type: 'SET_MENU', payload: res.data.menu });
+      dispatch({ type: 'SET_MENU', payload: res.data.menu || [] });
+      dispatch({ type: 'SET_MENU_STATUS', payload: res.data.status });
     } catch (err) { console.error('Failed to load mess menu', err); }
   };
 
@@ -204,6 +207,17 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'mess') return;
+    let timer = setInterval(() => {
+      fetchMessMenu();
+    }, 30000);
+    fetchMessMenu();
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [activeTab]);
+
   /* ================= RENDER ================= */
   return (
     <div className="admin-dashboard">
@@ -360,17 +374,84 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
         {activeTab === 'mess' && (
           <div className="content-area">
             <div className="page-header">
-              <h1>Mess Menu</h1>
+              <div>
+                <h1>Mess Menu</h1>
+                <p>Check today’s and weekly food schedule</p>
+              </div>
+              <span
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '12px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: state.messMenuStatus === 'active' ? '#d1fae5' : '#fee2e2',
+                  color: state.messMenuStatus === 'active' ? '#065f46' : '#7f1d1d'
+                }}
+              >
+                {state.messMenuStatus === 'active' ? 'Active' : 'Inactive'}
+              </span>
             </div>
+            {state.messMenuStatus === 'inactive' && (
+              <div className="card" style={{ marginBottom: '16px', background: '#fff7f7', border: '1px solid #fee2e2' }}>
+                <p style={{ margin: 0, color: '#7f1d1d' }}>Mess service temporarily unavailable</p>
+              </div>
+            )}
             {state.messMenu.length === 0 ? (
               <p>No menu available</p>
             ) : (
-              state.messMenu.map((m, i) => (
-                <div key={i}>
-                  <strong>{m.day}</strong>
-                  <p>{m.breakfast} | {m.lunch} | {m.dinner}</p>
-                </div>
-              ))
+              (() => {
+                const todayName = new Date().toLocaleDateString('en-IN', { weekday: 'long' });
+                return (
+                  <div>
+                    {state.messMenu.map((m, i) => {
+                      const isToday = m.day === todayName;
+                      return (
+                        <div key={i} className={`mess-menu-card ${isToday ? 'today-card' : ''}`}>
+                          <div className="mess-menu-header">
+                            <div className="day-info">
+                              <h3 className="day-name">{m.day}</h3>
+                              {isToday && <span className="today-badge">Today</span>}
+                            </div>
+                            <span className="date-info">{new Date(m.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                          </div>
+                          <div className="meal-list">
+                            <div className="meal-item">
+                              <div className="meal-icon breakfast-icon">🍳</div>
+                              <div className="meal-content">
+                                <div className="meal-name">Breakfast</div>
+                                <div className="meal-dish">{m.breakfast}</div>
+                              </div>
+                              <span className={`veg-badge ${m.isBreakfastVeg ? 'veg' : 'non-veg'}`}>
+                                {m.isBreakfastVeg ? '🥬 Veg' : '🍗 Non-Veg'}
+                              </span>
+                            </div>
+                            <div className="meal-item">
+                              <div className="meal-icon lunch-icon">🍽️</div>
+                              <div className="meal-content">
+                                <div className="meal-name">Lunch</div>
+                                <div className="meal-dish">{m.lunch}</div>
+                              </div>
+                              <span className={`veg-badge ${m.isLunchVeg ? 'veg' : 'non-veg'}`}>
+                                {m.isLunchVeg ? '🥬 Veg' : '🍗 Non-Veg'}
+                              </span>
+                            </div>
+                            <div className="meal-item">
+                              <div className="meal-icon dinner-icon">🍽️</div>
+                              <div className="meal-content">
+                                <div className="meal-name">Dinner</div>
+                                <div className="meal-dish">{m.dinner}</div>
+                              </div>
+                              <span className={`veg-badge ${m.isDinnerVeg ? 'veg' : 'non-veg'}`}>
+                                {m.isDinnerVeg ? '🥬 Veg' : '🍗 Non-Veg'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
             )}
           </div>
         )}

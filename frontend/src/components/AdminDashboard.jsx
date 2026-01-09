@@ -9,6 +9,7 @@ import RecentActivities from './RecentActivities';
 import QuickStats from './QuickStats';
 import Rooms from './Rooms';
 import SharedRooms from './SharedRooms';
+import AdminMessMenu from './AdminMessMenu';
 import Payments from './Payments';
 import ComplaintAdmin from './Complaint';
 
@@ -209,6 +210,17 @@ const AdminDashboard = ({ user, onLogout }) => {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             </svg>
             Rooms
+          </button>
+
+          <button 
+            className={activeTab === 'messmenu' ? 'active' : ''} 
+            onClick={() => setActiveTab('messmenu')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 3h16v4H4z"></path>
+              <path d="M4 11h16v10H4z"></path>
+            </svg>
+            Mess Menu
           </button>
 
           <button 
@@ -511,6 +523,7 @@ const AdminDashboard = ({ user, onLogout }) => {
         )}
 
         {activeTab === 'rooms' && <SharedRooms userRole="admin" />}
+        {activeTab === 'messmenu' && <AdminMessMenu />}
         {activeTab === 'payments' && <Payments />}
         {activeTab === 'complaints' && <ComplaintAdmin />}
 
