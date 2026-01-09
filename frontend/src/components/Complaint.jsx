@@ -6,8 +6,9 @@ import './Dashboard.css';
 const STATUS_MAP = {
   pending: { label: 'Open', key: 'open' },
   'in-progress': { label: 'In-Progress', key: 'inprogress' },
-  resolved: { label: 'Closed', key: 'closed' },
-  closed: { label: 'Closed', key: 'closed' }
+  resolved: { label: 'Resolved', key: 'closed' },
+  closed: { label: 'Closed', key: 'closed' },
+  rejected: { label: 'Rejected', key: 'closed' }
 };
 
 const ComplaintAdmin = () => {
@@ -183,8 +184,9 @@ const ComplaintAdmin = () => {
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="pending">Open</option>
                 <option value="in-progress">In-Progress</option>
-                <option value="resolved">Closed</option>
+                <option value="resolved">Resolved</option>
                 <option value="closed">Closed</option>
+                <option value="rejected">Rejected</option>
               </select>
             </div>
             <div className="form-row">

@@ -174,3 +174,65 @@
 .btn-secondary:hover {
   background-color: #e5e7eb;
 }
+
+/* Additional styles for shared room component */
+.room-card.requested {
+  border: 2px solid #3b82f6;
+  background-color: #eff6ff;
+}
+
+.room-card .status.requested {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.room-card .status.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.room-card .status.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.room-card .status.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-primary.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.btn-primary.info:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-body {
+  padding: 1rem 0;
+}
+
+.modal-body p {
+  margin: 0.5rem 0;
+}
+
+.text-btn.remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.text-btn.remove:hover {
+  background-color: #fee2e2;
+}
