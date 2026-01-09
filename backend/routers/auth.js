@@ -147,6 +147,10 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Account pending admin approval' });
     }
 
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET,

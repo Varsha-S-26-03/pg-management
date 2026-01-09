@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
 import TenantComplaints from './TenantComplaints';
+import TenantProfile from './TenantProfile';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
@@ -524,18 +525,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
           </div>
         )}
 
-        {activeTab === 'profile' && (
-          <div className="content-area">
-            <div className="page-header">
-              <h1>Profile</h1>
-            </div>
-            <div className="card">
-              <p>Name: {user?.name}</p>
-              <p>Email: {user?.email}</p>
-              <p>Phone: {user?.phone || 'N/A'}</p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'profile' && <TenantProfile user={user} />}
       </main>
     </div>
   );

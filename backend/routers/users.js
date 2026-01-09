@@ -102,4 +102,81 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const effectiveJoiningDate = user.joiningDate || user.createdAt;
+
+    let tenantDetails = {};
+    if (user.role === 'tenant') {
+      const Room = require('../models/Room');
+      const room = await Room.findOne({ tenants: user._id });
+      tenantDetails = {
+        roomNumber: room ? room.roomNumber : 'Not assigned',
+        rentAmount: room ? room.price : 0
+      };
+    }
+
+    const profileData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      profileRole: user.profileRole,
+      joiningDate: effectiveJoiningDate,
+      isActive: user.isActive,
+      approved: user.approved,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      profilePhoto: user.profilePhoto,
+      emergencyContact: user.emergencyContact,
+      ...tenantDetails
+    };
+
+    res.json(profileData);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.put('/me', authMiddleware, async (req, res) => {
+  try {
+    const { phone, emergencyContact, profilePhoto, gender, dateOfBirth, profileRole } = req.body;
+
+    const updates = {};
+    if (phone !== undefined) updates.phone = phone;
+    if (emergencyContact !== undefined) updates.emergencyContact = emergencyContact;
+    if (profilePhoto !== undefined) updates.profilePhoto = profilePhoto;
+    if (gender !== undefined) updates.gender = gender;
+    if (dateOfBirth !== undefined && dateOfBirth !== '') updates.dateOfBirth = dateOfBirth;
+    if (profileRole !== undefined) updates.profileRole = profileRole;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;

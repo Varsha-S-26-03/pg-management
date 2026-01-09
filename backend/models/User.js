@@ -70,6 +70,38 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    default: 'other'
+  },
+  dateOfBirth: {
+    type: Date
+  },
+  profilePhoto: {
+    type: String,
+    default: ''
+  },
+  emergencyContact: {
+    name: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    relation: { type: String, default: '' }
+  },
+  joiningDate: {
+    type: Date
+  },
+  profileRole: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  lastLogin: {
+    type: Date
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
