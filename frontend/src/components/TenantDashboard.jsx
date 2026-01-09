@@ -35,6 +35,9 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const [moveOutDate, setMoveOutDate] = useState('');
   const [moveOutReason, setMoveOutReason] = useState('');
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
 
   const navigate = useNavigate();
 
@@ -96,6 +99,125 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       });
       dispatch({ type: 'SET_ROOM_REQUESTS', payload: res.data.requests });
     } catch (err) { console.error('Failed to load room requests', err); }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError('');
+      const token = getToken();
+      const headers = { Authorization: `Bearer ${token}` };
+      let list = [];
+
+      try {
+        const res = await axios.get(`${config.API_URL}/payments`, { headers });
+        const payments = res.data.payments || [];
+        const tenantName = user?.name || '';
+        payments.forEach(p => {
+          if (!p.tenant || p.tenant.name !== tenantName) return;
+          const paid = p.status === 'paid';
+          list.push({
+            id: `payment-${p._id}`,
+            type: paid ? 'system' : 'alert',
+            message: paid
+              ? `Rent paid: ₹${p.amount} on ${new Date(p.date).toLocaleDateString('en-IN')}`
+              : `Rent pending: ₹${p.amount}`,
+            timestamp: new Date(p.date || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Failed to load payments for notifications', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/complaints`, { headers });
+        const complaints = res.data.complaints || [];
+        complaints.forEach(c => {
+          const base = `Complaint (${c.category || 'general'}): ${c.title}`;
+          const ts = new Date(c.updatedAt || c.createdAt || Date.now());
+          if (c.status === 'pending' || c.status === 'in-progress') {
+            list.push({
+              id: `complaint-${c._id}`,
+              type: 'alert',
+              message: `${base} is ${c.status}`,
+              timestamp: ts
+            });
+          } else if (c.status === 'resolved' || c.status === 'closed') {
+            list.push({
+              id: `complaint-${c._id}`,
+              type: 'system',
+              message: `${base} has been ${c.status}`,
+              timestamp: ts
+            });
+          } else if (c.status === 'rejected') {
+            list.push({
+              id: `complaint-${c._id}`,
+              type: 'alert',
+              message: `${base} was rejected`,
+              timestamp: ts
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load complaints for notifications', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/room-requests/my-requests`, { headers });
+        const requests = res.data.requests || [];
+        requests.forEach(r => {
+          const roomNumber = r.roomId?.roomNumber || 'Room';
+          if (r.status === 'Pending') {
+            list.push({
+              id: `roomreq-${r._id}`,
+              type: 'approval',
+              message: `Room request pending for ${roomNumber}`,
+              timestamp: new Date(r.requestedAt || Date.now())
+            });
+          } else if (r.status === 'Approved') {
+            list.push({
+              id: `roomreq-${r._id}`,
+              type: 'system',
+              message: `Room request approved for ${roomNumber}`,
+              timestamp: new Date(r.reviewedAt || r.requestedAt || Date.now())
+            });
+          } else if (r.status === 'Rejected') {
+            list.push({
+              id: `roomreq-${r._id}`,
+              type: 'alert',
+              message: `Room request rejected for ${roomNumber}`,
+              timestamp: new Date(r.reviewedAt || r.requestedAt || Date.now())
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Failed to load room requests for notifications', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/mess/menu/active`, { headers });
+        const menu = res.data.menu || [];
+        menu.forEach(m => {
+          const day = m.day || new Date(m.date).toLocaleDateString('en-IN', { weekday: 'long' });
+          list.push({
+            id: `mess-${m._id}`,
+            type: 'system',
+            message: `Today's menu available for ${day}`,
+            timestamp: new Date(m.updatedAt || m.date || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Failed to load mess menu for notifications', err);
+      }
+
+      list.sort((a, b) => b.timestamp - a.timestamp);
+      setNotifications(list);
+    } catch (error) {
+      console.error('Failed to build notifications', error);
+      setNotificationsError('Failed to load notifications');
+    } finally {
+      setNotificationsLoading(false);
+    }
   };
 
   /* ================= ACTIONS ================= */
@@ -204,6 +326,8 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       fetchComplaints();
     } else if (activeTab === 'moveout') {
       fetchMoveOutStatus();
+    } else if (activeTab === 'notifications') {
+      fetchNotifications();
     }
   }, [activeTab]);
 
@@ -239,7 +363,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
           </button>
         </div>
         <div className="sidebar-nav">
-          {['overview', 'mess', 'rooms', 'complaints', 'payments', 'moveout', 'profile'].map(tab => (
+          {['overview', 'mess', 'rooms', 'complaints', 'payments', 'moveout', 'notifications', 'profile'].map(tab => (
             <button
               key={tab}
               className={activeTab === tab ? 'active' : ''}
@@ -273,6 +397,12 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               {tab === 'moveout' && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M10 22V6l-2 2"></path><path d="M14 22V6l2 2"></path>
+                </svg>
+              )}
+              {tab === 'notifications' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
               )}
               {tab === 'profile' && (
@@ -593,6 +723,78 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                 <button type="submit" className="btn-primary" style={{ marginTop: '12px' }}>Submit Request</button>
               </form>
             )}
+          </div>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div className="content-area">
+            <div className="page-header">
+              <h1>Notifications</h1>
+              <button className="btn-primary" onClick={fetchNotifications}>
+                Refresh
+              </button>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h2>Your notices</h2>
+              </div>
+              {notificationsLoading ? (
+                <div style={{ textAlign: 'center', padding: '32px' }}>
+                  <div className="spinner"></div>
+                  <p>Loading notifications...</p>
+                </div>
+              ) : notificationsError ? (
+                <div style={{ padding: '16px', color: '#dc2626' }}>
+                  {notificationsError}
+                </div>
+              ) : notifications.length === 0 ? (
+                <ul className="notifications-list">
+                  <li className="notification-item empty">
+                    No notifications to show
+                  </li>
+                </ul>
+              ) : (
+                <ul className="notifications-list">
+                  {notifications.map(n => (
+                    <li key={n.id} className={`notification-item ${n.type}`}>
+                      <div className="notification-icon">
+                        {n.type === 'approval' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 12l2 2 4-4"></path>
+                            <circle cx="12" cy="12" r="10"></circle>
+                          </svg>
+                        )}
+                        {n.type === 'alert' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12" y2="16"></line>
+                          </svg>
+                        )}
+                        {n.type === 'system' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="notification-content">
+                        <div className="message">{n.message}</div>
+                        <div className="timestamp">
+                          {n.timestamp.toLocaleString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 

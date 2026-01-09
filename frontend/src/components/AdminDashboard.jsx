@@ -28,6 +28,9 @@ const AdminDashboard = ({ user, onLogout }) => {
     pendingPayments:0
   });
   const [selectedUser, setSelectedUser] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
 
   useEffect(() => {
     if (activeTab === 'approvals') {
@@ -37,6 +40,9 @@ const AdminDashboard = ({ user, onLogout }) => {
     }
     if (activeTab === 'overview') {
       fetchStats();
+    }
+    if (activeTab === 'notifications') {
+      fetchNotifications();
     }
   }, [activeTab]);
 
@@ -85,6 +91,105 @@ const AdminDashboard = ({ user, onLogout }) => {
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError('');
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      let list = [];
+
+      try {
+        const res = await axios.get(`${config.API_URL}/auth/pending-tenants`, { headers });
+        const tenants = res.data.tenants || [];
+        tenants.forEach(t => {
+          list.push({
+            id: `tenant-${t._id}`,
+            type: 'approval',
+            message: `Tenant approval pending: ${t.name}`,
+            timestamp: new Date(t.createdAt || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching pending tenants for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/room-requests`, { params: { status: 'Pending' }, headers });
+        const requests = res.data.requests || [];
+        requests.forEach(r => {
+          const tenantName = r.tenantId?.name || r.tenantName || 'Tenant';
+          const roomNumber = r.roomId?.roomNumber || 'Room';
+          list.push({
+            id: `roomreq-${r._id}`,
+            type: 'approval',
+            message: `Room request pending: ${tenantName} → ${roomNumber}`,
+            timestamp: new Date(r.requestedAt || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching room requests for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/complaints/admin`, { headers });
+        const complaints = res.data.complaints || [];
+        complaints.slice(0, 10).forEach(c => {
+          list.push({
+            id: `complaint-${c._id}`,
+            type: 'alert',
+            message: `Complaint (${c.category || 'general'}): ${c.title}`,
+            timestamp: new Date(c.createdAt || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching complaints for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/payments`, { headers });
+        const payments = res.data.payments || [];
+        payments.slice(0, 10).forEach(p => {
+          const tenantName = p.tenant?.name || 'Tenant';
+          const statusLabel = p.status === 'paid' ? 'Payment received' : 'Payment pending';
+          list.push({
+            id: `payment-${p._id}`,
+            type: p.status === 'paid' ? 'system' : 'alert',
+            message: `${statusLabel}: ₹${p.amount} from ${tenantName}`,
+            timestamp: new Date(p.date || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching payments for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/mess/menu`, { headers });
+        const menu = res.data.menu || [];
+        menu.forEach(m => {
+          const date = new Date(m.date);
+          const day = m.day || date.toLocaleDateString('en-IN', { weekday: 'long' });
+          list.push({
+            id: `mess-${m._id}`,
+            type: 'system',
+            message: `Mess menu updated for ${day}`,
+            timestamp: new Date(m.updatedAt || m.createdAt || m.date || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching mess menu for notifications:', err);
+      }
+
+      list.sort((a, b) => b.timestamp - a.timestamp);
+      setNotifications(list);
+    } catch (error) {
+      console.error('Error building notifications:', error);
+      setNotificationsError('Failed to load notifications');
+    } finally {
+      setNotificationsLoading(false);
     }
   };
 
@@ -168,6 +273,17 @@ const AdminDashboard = ({ user, onLogout }) => {
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
             Overview
+          </button>
+
+          <button 
+            className={activeTab === 'notifications' ? 'active' : ''} 
+            onClick={() => setActiveTab('notifications')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            Notifications
           </button>
 
           <button 
@@ -448,6 +564,79 @@ const AdminDashboard = ({ user, onLogout }) => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div className="content-area">
+            <div className="page-header">
+              <h1>Notifications</h1>
+              <button className="btn-primary" onClick={fetchNotifications}>
+                Refresh
+              </button>
+            </div>
+
+            <div className="card">
+              <div className="card-header">
+                <h2>All notices</h2>
+              </div>
+              {notificationsLoading ? (
+                <div style={{ textAlign: 'center', padding: '32px' }}>
+                  <div className="spinner"></div>
+                  <p>Loading notifications...</p>
+                </div>
+              ) : notificationsError ? (
+                <div style={{ padding: '16px', color: '#dc2626' }}>
+                  {notificationsError}
+                </div>
+              ) : notifications.length === 0 ? (
+                <ul className="notifications-list">
+                  <li className="notification-item empty">
+                    No notifications to show
+                  </li>
+                </ul>
+              ) : (
+                <ul className="notifications-list">
+                  {notifications.map(n => (
+                    <li key={n.id} className={`notification-item ${n.type}`}>
+                      <div className="notification-icon">
+                        {n.type === 'approval' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 12l2 2 4-4"></path>
+                            <circle cx="12" cy="12" r="10"></circle>
+                          </svg>
+                        )}
+                        {n.type === 'alert' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12" y2="16"></line>
+                          </svg>
+                        )}
+                        {n.type === 'system' && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="notification-content">
+                        <div className="message">{n.message}</div>
+                        <div className="timestamp">
+                          {n.timestamp.toLocaleString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
