@@ -472,9 +472,6 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       <main className="main-content">
         {activeTab === 'overview' && (
           <div className="content-area">
-            <div className="page-header">
-              <h1>Welcome, {user?.name}</h1>
-            </div>
             {(() => {
               const room = findTenantRoom();
               const stats = computeOverview();
@@ -483,13 +480,43 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                 : null;
               const dep = depositStatus(room);
               const pendingCount = state.payments.filter(p => p.status === 'pending' && (p.tenant && p.tenant.name === (user?.name || ''))).length;
+              const rentPaid = currentMonthPaid();
+              const rentDue = nextDueDate();
+              const roomOccupancy = room ? ((room.occupied || 0) >= (room.capacity || 0) ? 'full' : 'available') : 'unassigned';
+              const depositPill = dep.status === 'paid' ? 'paid' : 'pending';
               return (
-                <div>
-                  <div className="stats-grid">
-                    <div className="stat-card blue">
+                <div className="tenant-overview">
+                  <div className="page-header tenant-overview-header">
+                    <div className="tenant-overview-title">
+                      <h1>Welcome back, {user?.name}</h1>
+                      <p>Your latest snapshot: room, rent, and requests at a glance.</p>
+                    </div>
+                    <div className="tenant-overview-actions">
+                      <button className="btn-secondary tenant-action-btn" onClick={() => setActiveTab('payments')}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 1v22"></path>
+                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Payments
+                      </button>
+                      <button className="btn-primary tenant-action-btn" onClick={() => setActiveTab('complaints')}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                          <path d="M8 9h8"></path>
+                          <path d="M8 13h6"></path>
+                        </svg>
+                        Raise Complaint
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="stats-grid tenant-stats-grid">
+                    <div className="stat-card blue tenant-stat-card">
                       <div className="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 21V3h18v18H3z"></path>
+                          <path d="M3 9h18"></path>
+                          <path d="M9 21V9"></path>
                         </svg>
                       </div>
                       <div className="stat-content">
@@ -497,10 +524,12 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                         <p className="stat-value">{stats.totalBeds}</p>
                       </div>
                     </div>
-                    <div className="stat-card green">
+                    <div className="stat-card green tenant-stat-card">
                       <div className="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path d="M3 12h18"></path>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 7H4"></path>
+                          <path d="M20 7v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7"></path>
+                          <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
                         </svg>
                       </div>
                       <div className="stat-content">
@@ -508,10 +537,11 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                         <p className="stat-value">{stats.vacantBeds}</p>
                       </div>
                     </div>
-                    <div className="stat-card purple">
+                    <div className="stat-card purple tenant-stat-card">
                       <div className="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path d="M3 12h18"></path><path d="M12 3v18"></path>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 12h18"></path>
+                          <path d="M12 3v18"></path>
                         </svg>
                       </div>
                       <div className="stat-content">
@@ -519,10 +549,12 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                         <p className="stat-value">{stats.occupiedRooms}</p>
                       </div>
                     </div>
-                    <div className="stat-card orange">
+                    <div className="stat-card orange tenant-stat-card">
                       <div className="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <circle cx="12" cy="12" r="9"></circle>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 8v4"></path>
+                          <path d="M12 16h.01"></path>
+                          <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path>
                         </svg>
                       </div>
                       <div className="stat-content">
@@ -531,17 +563,133 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="card" style={{ marginTop: '16px' }}>
-                    <h2>Your Room</h2>
-                    <p>Room Number: {room ? room.roomNumber : 'Not assigned'}</p>
-                    <p>Bed Number: {bedIndex || 'N/A'}</p>
-                    <p>Room Type: {room ? room.type : 'N/A'}</p>
-                    <p>Occupancy: {room ? ((room.occupied || 0) >= (room.capacity || 0) ? 'Full' : 'Available') : 'N/A'}</p>
-                  </div>
-                  <div className="card" style={{ marginTop: '16px' }}>
-                    <h2>Deposit</h2>
-                    <p>Amount: ₹{dep.amount}</p>
-                    <p>Status: {dep.status}</p>
+
+                  <div className="tenant-panels-grid">
+                    <div className="card tenant-panel">
+                      <div className="tenant-panel-header">
+                        <div className="tenant-panel-title">
+                          <div className="tenant-panel-icon tenant-panel-icon-blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z"></path>
+                              <path d="M9 22V12h6v10"></path>
+                            </svg>
+                          </div>
+                          <div>
+                            <h2>Your Room</h2>
+                            <p className="tenant-panel-subtitle">Assignment and occupancy details</p>
+                          </div>
+                        </div>
+                        <span className={`tenant-pill tenant-pill-${roomOccupancy}`}>
+                          {roomOccupancy === 'unassigned' ? 'Not assigned' : (roomOccupancy === 'full' ? 'Full' : 'Available')}
+                        </span>
+                      </div>
+                      <div className="tenant-kv-grid">
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Room Number</div>
+                          <div className="tenant-v">{room ? room.roomNumber : '—'}</div>
+                        </div>
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Bed Number</div>
+                          <div className="tenant-v">{bedIndex || '—'}</div>
+                        </div>
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Room Type</div>
+                          <div className="tenant-v">{room ? room.type : '—'}</div>
+                        </div>
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Capacity</div>
+                          <div className="tenant-v">{room ? `${room.occupied || 0}/${room.capacity || 0}` : '—'}</div>
+                        </div>
+                      </div>
+                      <div className="tenant-panel-actions">
+                        <button className="btn-secondary tenant-action-btn" onClick={() => setActiveTab('rooms')}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                            <path d="M3 10h18"></path>
+                          </svg>
+                          View Rooms
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="card tenant-panel">
+                      <div className="tenant-panel-header">
+                        <div className="tenant-panel-title">
+                          <div className="tenant-panel-icon tenant-panel-icon-purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 1v22"></path>
+                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                          </div>
+                          <div>
+                            <h2>Rent</h2>
+                            <p className="tenant-panel-subtitle">Due date and payment status</p>
+                          </div>
+                        </div>
+                        <span className={`tenant-pill tenant-pill-${rentPaid ? 'paid' : 'pending'}`}>
+                          {rentPaid ? 'Paid' : 'Pending'}
+                        </span>
+                      </div>
+                      <div className="tenant-kv-grid">
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Monthly Amount</div>
+                          <div className="tenant-v">{room ? `₹${room.price || 0}` : '—'}</div>
+                        </div>
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Due Date</div>
+                          <div className="tenant-v">{rentDue.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                        </div>
+                      </div>
+                      <div className="tenant-panel-actions">
+                        <button className="btn-primary tenant-action-btn" onClick={() => setActiveTab('payments')}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path>
+                            <path d="M21 10H3v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8z"></path>
+                            <path d="M7 15h4"></path>
+                          </svg>
+                          Open Payments
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="card tenant-panel">
+                      <div className="tenant-panel-header">
+                        <div className="tenant-panel-title">
+                          <div className="tenant-panel-icon tenant-panel-icon-green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M20 7H4"></path>
+                              <path d="M20 7v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7"></path>
+                              <path d="M16 7V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v2"></path>
+                              <path d="M9 12h6"></path>
+                            </svg>
+                          </div>
+                          <div>
+                            <h2>Deposit</h2>
+                            <p className="tenant-panel-subtitle">Security amount and status</p>
+                          </div>
+                        </div>
+                        <span className={`tenant-pill tenant-pill-${depositPill}`}>{depositPill}</span>
+                      </div>
+                      <div className="tenant-kv-grid">
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Amount</div>
+                          <div className="tenant-v">₹{dep.amount}</div>
+                        </div>
+                        <div className="tenant-kv">
+                          <div className="tenant-k">Status</div>
+                          <div className="tenant-v tenant-capitalize">{dep.status}</div>
+                        </div>
+                      </div>
+                      <div className="tenant-panel-actions">
+                        <button className="btn-secondary tenant-action-btn" onClick={() => setActiveTab('notifications')}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                          </svg>
+                          View Alerts
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
