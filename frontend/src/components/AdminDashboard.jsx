@@ -154,12 +154,14 @@ const AdminDashboard = ({ user, onLogout }) => {
         const payments = res.data.payments || [];
         payments.slice(0, 10).forEach(p => {
           const tenantName = p.tenant?.name || 'Tenant';
-          const statusLabel = p.status === 'paid' ? 'Payment received' : 'Payment pending';
+          const isVerified = p.status === 'paid' || p.status === 'verified';
+          const isRejected = p.status === 'rejected';
+          const statusLabel = isVerified ? 'Payment verified' : isRejected ? 'Payment rejected' : 'Payment pending';
           list.push({
             id: `payment-${p._id}`,
-            type: p.status === 'paid' ? 'system' : 'alert',
+            type: isVerified ? 'system' : 'alert',
             message: `${statusLabel}: ₹${p.amount} from ${tenantName}`,
-            timestamp: new Date(p.date || Date.now())
+            timestamp: new Date(p.updatedAt || p.date || Date.now())
           });
         });
       } catch (err) {

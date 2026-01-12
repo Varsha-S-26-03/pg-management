@@ -39,6 +39,11 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMonth, setPaymentMonth] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [paymentRefId, setPaymentRefId] = useState('');
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   const navigate = useNavigate();
 
@@ -68,7 +73,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
 
   const fetchPayments = async () => {
     try {
-      const res = await axios.get(`${config.API_URL}/payments`, {
+      const res = await axios.get(`${config.API_URL}/payments/my`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_PAYMENTS', payload: res.data.payments });
@@ -111,19 +116,20 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       let list = [];
 
       try {
-        const res = await axios.get(`${config.API_URL}/payments`, { headers });
+        const res = await axios.get(`${config.API_URL}/payments/my`, { headers });
         const payments = res.data.payments || [];
-        const tenantName = user?.name || '';
         payments.forEach(p => {
-          if (!p.tenant || p.tenant.name !== tenantName) return;
-          const paid = p.status === 'paid';
+          const paid = p.status === 'paid' || p.status === 'verified';
+          const baseMessage = `Rent ₹${p.amount}`;
           list.push({
             id: `payment-${p._id}`,
-            type: paid ? 'system' : 'alert',
+            type: paid ? 'system' : p.status === 'rejected' ? 'alert' : 'alert',
             message: paid
-              ? `Rent paid: ₹${p.amount} on ${new Date(p.date).toLocaleDateString('en-IN')}`
-              : `Rent pending: ₹${p.amount}`,
-            timestamp: new Date(p.date || Date.now())
+              ? `${baseMessage} verified on ${new Date(p.date).toLocaleDateString('en-IN')}`
+              : p.status === 'rejected'
+                ? `${baseMessage} was rejected`
+                : `${baseMessage} pending`,
+            timestamp: new Date(p.updatedAt || p.date || Date.now())
           });
         });
       } catch (err) {
@@ -259,6 +265,39 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     }
   };
 
+  const handleSubmitPayment = async (e) => {
+    e.preventDefault();
+    if (!paymentAmount) {
+      alert('Please enter amount');
+      return;
+    }
+    try {
+      setSubmittingPayment(true);
+      await axios.post(
+        `${config.API_URL}/payments`,
+        {
+          amount: Number(paymentAmount),
+          paymentType: 'rent',
+          billingPeriod: paymentMonth,
+          method: paymentMethod,
+          referenceId: paymentRefId
+        },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setPaymentAmount('');
+      setPaymentMonth('');
+      setPaymentMethod('upi');
+      setPaymentRefId('');
+      fetchPayments();
+      alert('Payment submitted for review');
+    } catch (err) {
+      console.error('Failed to submit payment:', err);
+      alert(err.response?.data?.message || 'Failed to submit payment');
+    } finally {
+      setSubmittingPayment(false);
+    }
+  };
+
   /* ================= HELPERS ================= */
   const findTenantRoom = () => {
     if (!user || state.rooms.length === 0) return null;
@@ -281,20 +320,28 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     return state.payments.some(p => {
       const pd = new Date(p.date);
       const sameMonth = pd.getMonth() === now.getMonth() && pd.getFullYear() === now.getFullYear();
-      const tn = p.tenant && (p.tenant.name || '');
-      return sameMonth && p.status === 'paid' && tn === (user.name || '');
+      return sameMonth && (p.status === 'paid' || p.status === 'verified' || p.status === 'completed');
     });
   };
 
   const depositStatus = (room) => {
     const amount = room?.price || 0;
-    const paid = state.payments.some(p => p.status === 'paid' && p.amount >= amount && p.tenant && p.tenant.name === (user?.name || ''));
-    return { amount, status: paid ? 'paid' : 'pending' };
+    const paid = state.payments.some(
+      p => (p.status === 'paid' || p.status === 'verified' || p.status === 'completed') && p.amount >= amount
+    );
+    return { amount, status: paid ? 'verified' : 'pending' };
   };
 
   const paymentHistoryForTenant = () => {
     if (!user) return [];
-    return state.payments.filter(p => p.tenant && p.tenant.name === (user.name || '')).sort((a, b) => new Date(b.date) - new Date(a.date));
+    return state.payments.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
+  const paymentStatusLabel = (status) => {
+    if (status === 'completed') return 'Completed';
+    if (status === 'paid' || status === 'verified') return 'Verified';
+    if (status === 'rejected') return 'Rejected';
+    return 'Pending';
   };
 
   const formatMonth = (d) => {
@@ -663,11 +710,85 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               const paid = currentMonthPaid();
               return (
                 <div>
+                  <div className="card" style={{ marginBottom: '16px', padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <div>
+                        <h2 style={{ margin: 0 }}>Submit Payment</h2>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>Securely submit your monthly rent to the PG</p>
+                      </div>
+                      <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
+                        <div>Next Due: {due.toLocaleDateString('en-IN')}</div>
+                        <div>Status: {paid ? 'Verified' : 'Pending'}</div>
+                      </div>
+                    </div>
+                    <form onSubmit={handleSubmitPayment} style={{ display: 'grid', gap: '12px' }}>
+                      <div className="profile-fields">
+                        <div className="field-group">
+                          <label>Payment Type</label>
+                          <div className="field-value">Rent</div>
+                        </div>
+                        <div className="field-group">
+                          <label>Pay To</label>
+                          <div className="field-value">PG Management</div>
+                        </div>
+                        <div className="field-group">
+                          <label>Amount</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="form-input"
+                            value={paymentAmount}
+                            onChange={e => setPaymentAmount(e.target.value)}
+                            placeholder={room?.price ? String(room.price) : 'Enter amount'}
+                          />
+                        </div>
+                        <div className="field-group">
+                          <label>Month / Period</label>
+                          <input
+                            type="month"
+                            className="form-input"
+                            value={paymentMonth}
+                            onChange={e => setPaymentMonth(e.target.value)}
+                          />
+                        </div>
+                        <div className="field-group">
+                          <label>Method</label>
+                          <select
+                            className="form-input"
+                            value={paymentMethod}
+                            onChange={e => setPaymentMethod(e.target.value)}
+                          >
+                            <option value="upi">UPI</option>
+                            <option value="cash">Cash</option>
+                            <option value="netbanking">Net Banking</option>
+                            <option value="card">Card</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="field-group">
+                          <label>Transaction / Reference ID</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={paymentRefId}
+                            onChange={e => setPaymentRefId(e.target.value)}
+                            placeholder="UPI reference or transaction ID"
+                          />
+                        </div>
+                      </div>
+                      <div className="profile-actions" style={{ justifyContent: 'flex-start' }}>
+                        <button type="submit" className="btn-primary" disabled={submittingPayment}>
+                          {submittingPayment ? 'Submitting...' : 'Submit Payment'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                   <div className="card">
                     <h2>Monthly Rent</h2>
                     <p>Amount: ₹{room?.price || 0}</p>
                     <p>Due Date: {due.toLocaleDateString('en-IN')}</p>
-                    <p>Status: {paid ? 'paid' : 'pending'}</p>
+                    <p>Status: {paid ? 'Verified' : 'Pending'}</p>
                     <p>{paid ? 'No upcoming reminders' : (new Date() > due ? 'Overdue rent' : 'Upcoming rent due')}</p>
                   </div>
                   <div className="card" style={{ marginTop: '16px' }}>
@@ -678,11 +799,20 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                       ) : (
                         <div>
                           {paymentHistoryForTenant().map(p => (
-                            <div key={p._id} className="history-row">
-                              <span>{formatMonth(p.date)}</span>
-                              <span>₹{p.amount}</span>
-                              <span>{new Date(p.date).toLocaleDateString('en-IN')}</span>
-                              <span>-</span>
+                            <div key={p._id} style={{ marginBottom: '8px' }}>
+                              <div className="history-row">
+                                <span>{formatMonth(p.date)}</span>
+                                <span>₹{p.amount}</span>
+                                <span>{new Date(p.date).toLocaleDateString('en-IN')}</span>
+                                <span style={{ fontWeight: 600, color: p.status === 'rejected' ? '#b91c1c' : (p.status === 'paid' || p.status === 'verified' || p.status === 'completed') ? '#15803d' : '#b45309' }}>
+                                  {paymentStatusLabel(p.status)}
+                                </span>
+                              </div>
+                              {p.adminReply && (
+                                <div style={{ fontSize: 12, color: '#4b5563', marginLeft: 4 }}>
+                                  Admin: {p.adminReply}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
