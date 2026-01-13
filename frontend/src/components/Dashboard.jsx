@@ -362,46 +362,6 @@ const Dashboard = ({ onLogout }) => {
                   </div>
                 </div>
               </div>
-
-              <div className="card">
-                <div className="card-header">
-                  <h2>Quick Stats</h2>
-                </div>
-                <div className="quick-stats">
-                  <div className="quick-stat-item">
-                    <div className="progress-circle blue">
-                      <svg viewBox="0 0 36 36">
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e6e6e6" strokeWidth="3"/>
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="75, 100"/>
-                      </svg>
-                      <span>75%</span>
-                    </div>
-                    <p>Occupancy Rate</p>
-                  </div>
-
-                  <div className="quick-stat-item">
-                    <div className="progress-circle green">
-                      <svg viewBox="0 0 36 36">
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e6e6e6" strokeWidth="3"/>
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="88, 100"/>
-                      </svg>
-                      <span>88%</span>
-                    </div>
-                    <p>Payment Collection</p>
-                  </div>
-
-                  <div className="quick-stat-item">
-                    <div className="progress-circle purple">
-                      <svg viewBox="0 0 36 36">
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e6e6e6" strokeWidth="3"/>
-                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="92, 100"/>
-                      </svg>
-                      <span>92%</span>
-                    </div>
-                    <p>Tenant Satisfaction</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

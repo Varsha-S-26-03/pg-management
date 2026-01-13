@@ -58,3 +58,7 @@
 .stat-card.green .stat-icon { background-color: #10b981; }
 .stat-card.purple .stat-icon { background-color: #8b5cf6; }
 .stat-card.red .stat-icon { background-color: #ef4444; }
+.stat-card.teal .stat-icon { background-color: #14b8a6; }
+.stat-card.indigo .stat-icon { background-color: #6366f1; }
+.stat-card.yellow .stat-icon { background-color: #eab308; }
+.stat-card.cyan .stat-icon { background-color: #06b6d4; }

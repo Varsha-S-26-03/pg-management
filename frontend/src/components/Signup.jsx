@@ -10,6 +10,9 @@ const Signup = ({ onLogin }) => {
     email: '',
     phone: '',
     address: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelation: '',
     age: '',
     occupation: '',
     idType: '',
@@ -93,6 +96,9 @@ const Signup = ({ onLogin }) => {
         occupation: formData.occupation,
         idType: formData.idType,
         idNumber: formData.idNumber,
+        emergencyContactName: formData.emergencyContactName,
+        emergencyContactPhone: formData.emergencyContactPhone,
+        emergencyContactRelation: formData.emergencyContactRelation,
         password: formData.password,
         role: formData.role
       });
@@ -297,6 +303,69 @@ const Signup = ({ onLogin }) => {
                 placeholder={formData.idType === 'aadhaar' ? '12 digit Aadhaar' : formData.idType === 'pan' ? 'ABCDE1234F' : 'Select ID type first'}
                 autoComplete="off"
                 disabled={formData.idType === ''}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label style={{ fontSize: '1.1em', fontWeight: '600', color: '#4f46e5', marginTop: '10px', marginBottom: '15px', display: 'block' }}>
+              Emergency Contact Details
+            </label>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="emergencyContactName">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Contact Name
+            </label>
+            <input
+              type="text"
+              id="emergencyContactName"
+              name="emergencyContactName"
+              value={formData.emergencyContactName}
+              onChange={handleChange}
+              placeholder="Emergency contact name"
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="emergencyContactPhone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                Contact Phone
+              </label>
+              <input
+                type="tel"
+                id="emergencyContactPhone"
+                name="emergencyContactPhone"
+                value={formData.emergencyContactPhone}
+                onChange={handleChange}
+                placeholder="Emergency contact phone"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="emergencyContactRelation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Relation
+              </label>
+              <input
+                type="text"
+                id="emergencyContactRelation"
+                name="emergencyContactRelation"
+                value={formData.emergencyContactRelation}
+                onChange={handleChange}
+                placeholder="e.g. Father, Mother"
               />
             </div>
           </div>

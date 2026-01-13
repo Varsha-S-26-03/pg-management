@@ -30,7 +30,10 @@ router.post('/signup', async (req, res) => {
       age,
       occupation,
       idType,
-      idNumber
+      idNumber,
+      emergencyContactName,
+      emergencyContactPhone,
+      emergencyContactRelation
     } = req.body;
 
     // Basic validation
@@ -65,7 +68,12 @@ router.post('/signup', async (req, res) => {
       age: age ? parseInt(age) : undefined,
       occupation: occupation ? occupation.trim() : '',
       idType: idType || undefined,
-      idNumber: idNumber ? idNumber.trim() : ''
+      idNumber: idNumber ? idNumber.trim() : '',
+      emergencyContact: {
+        name: emergencyContactName ? emergencyContactName.trim() : '',
+        phone: emergencyContactPhone ? emergencyContactPhone.trim() : '',
+        relation: emergencyContactRelation ? emergencyContactRelation.trim() : ''
+      }
     });
 
     // Save user

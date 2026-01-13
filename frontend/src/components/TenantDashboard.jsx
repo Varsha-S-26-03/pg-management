@@ -321,7 +321,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
 
   const paymentStatusLabel = (status) => {
     if (status === 'completed') return 'Completed';
-    if (status === 'paid' || status === 'verified') return 'Verified';
+    if (status === 'paid' || status === 'verified') return 'Paid';
     if (status === 'rejected') return 'Rejected';
     return 'Pending';
   };

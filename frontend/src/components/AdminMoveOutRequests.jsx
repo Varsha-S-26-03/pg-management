@@ -38,6 +38,7 @@ const AdminMoveOutRequests = () => {
       );
       fetchRequests();
     } catch (err) {
+      console.error('Failed to update status:', err);
       alert('Failed to update status');
     }
   };
@@ -51,6 +52,7 @@ const AdminMoveOutRequests = () => {
       });
       fetchRequests();
     } catch (err) {
+      console.error('Failed to delete request:', err);
       alert('Failed to delete request');
     }
   };
@@ -68,6 +70,7 @@ const AdminMoveOutRequests = () => {
       setReplyText({ ...replyText, [id]: '' });
       fetchRequests();
     } catch (err) {
+      console.error('Failed to send reply:', err);
       alert('Failed to send reply');
     }
   };

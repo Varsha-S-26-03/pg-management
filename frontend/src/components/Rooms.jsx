@@ -5,6 +5,7 @@ import './Rooms.css';
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
@@ -150,8 +151,48 @@ const Rooms = () => {
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${config.API_URL}/payments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPayments(response.data.payments || []);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    }
+  };
+
+  const getTenantRentStatus = (tenantId) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const paid = payments.some(p => {
+      const tId = p.tenant?._id || p.tenant;
+      if (tId !== tenantId) return false;
+      
+      const pDate = new Date(p.date);
+      return pDate.getMonth() === currentMonth && 
+             pDate.getFullYear() === currentYear && 
+             (p.status === 'paid' || p.status === 'verified') &&
+             p.paymentType === 'rent';
+    });
+    return paid ? 'Paid' : 'Pending';
+  };
+
+  const getTenantDepositStatus = (tenantId) => {
+    const paid = payments.some(p => {
+      const tId = p.tenant?._id || p.tenant;
+      return tId === tenantId && 
+             (p.status === 'paid' || p.status === 'verified') &&
+             p.paymentType === 'deposit';
+    });
+    return paid ? 'Paid' : 'Pending';
+  };
+
   useEffect(() => {
     fetchRooms();
+    fetchPayments();
   }, []);
 
   const fetchRooms = async () => {
@@ -222,6 +263,14 @@ const Rooms = () => {
                                 <div>
                                   <div className="occupant-name">{t.name}</div>
                                   <div className="occupant-email">{t.email}</div>
+                                  <div style={{ fontSize: '12px', marginTop: '4px', display: 'flex', gap: '8px' }}>
+                                    <span style={{ color: getTenantRentStatus(t._id) === 'Paid' ? '#16a34a' : '#dc2626', fontWeight: '600' }}>
+                                        Rent: {getTenantRentStatus(t._id)}
+                                    </span>
+                                    <span style={{ color: getTenantDepositStatus(t._id) === 'Paid' ? '#16a34a' : '#dc2626', fontWeight: '600' }}>
+                                        Deposit: {getTenantDepositStatus(t._id)}
+                                    </span>
+                                  </div>
                                 </div>
                                 <button className="text-btn remove" onClick={() => removeTenant(room._id, t._id)}>Remove</button>
                               </div>
