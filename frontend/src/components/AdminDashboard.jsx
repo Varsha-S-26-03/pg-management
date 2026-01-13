@@ -12,6 +12,7 @@ import SharedRooms from './SharedRooms';
 import AdminMessMenu from './AdminMessMenu';
 import Payments from './Payments';
 import ComplaintAdmin from './Complaint';
+import AdminMoveOutRequests from './AdminMoveOutRequests';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -360,6 +361,17 @@ const AdminDashboard = ({ user, onLogout }) => {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
             Complaints
+          </button>
+
+          <button 
+            className={activeTab === 'moveouts' ? 'active' : ''} 
+            onClick={() => setActiveTab('moveouts')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 22V6l-2 2"></path>
+              <path d="M14 22V6l2 2"></path>
+            </svg>
+            Move-Outs
           </button>
 
           <button 
@@ -717,6 +729,7 @@ const AdminDashboard = ({ user, onLogout }) => {
         {activeTab === 'messmenu' && <AdminMessMenu />}
         {activeTab === 'payments' && <Payments />}
         {activeTab === 'complaints' && <ComplaintAdmin />}
+        {activeTab === 'moveouts' && <AdminMoveOutRequests />}
 
         {activeTab === 'settings' && (
           <div className="content-area">

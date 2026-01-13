@@ -5,6 +5,7 @@ import config from '../config';
 import TenantComplaints from './TenantComplaints';
 import TenantProfile from './TenantProfile';
 import SharedRooms from './SharedRooms';
+import TenantMoveOut from './TenantMoveOut';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
@@ -17,7 +18,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     complaints: [],
     payments: [],
     rooms: [],
-    moveOut: null,
+    moveOut: [],
     roomRequests: []
   };
   const reducer = (s, a) => {
@@ -27,14 +28,12 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       case 'SET_COMPLAINTS': return { ...s, complaints: a.payload || [] };
       case 'SET_PAYMENTS': return { ...s, payments: a.payload || [] };
       case 'SET_ROOMS': return { ...s, rooms: a.payload || [] };
-      case 'SET_MOVEOUT': return { ...s, moveOut: a.payload || null };
+      case 'SET_MOVEOUT': return { ...s, moveOut: a.payload || [] };
       case 'SET_ROOM_REQUESTS': return { ...s, roomRequests: a.payload || [] };
       default: return s;
     }
   };
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [moveOutDate, setMoveOutDate] = useState('');
-  const [moveOutReason, setMoveOutReason] = useState('');
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -94,7 +93,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       const res = await axios.get(`${config.API_URL}/moveouts/me`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
-      dispatch({ type: 'SET_MOVEOUT', payload: res.data.notice });
+      dispatch({ type: 'SET_MOVEOUT', payload: res.data.notices });
     } catch (err) { console.error('Failed to load move-out status', err); }
   };
 
@@ -234,23 +233,6 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     navigate('/login');
   };
 
-
-  const handleSubmitMoveOut = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(
-        `${config.API_URL}/moveouts`,
-        { moveOutDate, reason: moveOutReason },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setMoveOutDate('');
-      setMoveOutReason('');
-      fetchMoveOutStatus();
-      alert('Move-out request submitted');
-    } catch {
-      alert('Error submitting move-out request');
-    }
-  };
 
   const handleCancelRoomRequest = async (requestId) => {
     try {
@@ -974,35 +956,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
         )}
 
         {activeTab === 'moveout' && (
-          <div className="content-area">
-            <div className="page-header">
-              <h1>Move-out Notice</h1>
-            </div>
-            {state.moveOut ? (
-              <div className="card">
-                <p>Status: {state.moveOut.status}</p>
-                <p>Requested Date: {new Date(state.moveOut.moveOutDate).toLocaleDateString('en-IN')}</p>
-                {state.moveOut.reason ? <p>Reason: {state.moveOut.reason}</p> : null}
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitMoveOut} className="card">
-                <label>Move-out Date</label>
-                <input
-                  type="date"
-                  value={moveOutDate}
-                  onChange={e => setMoveOutDate(e.target.value)}
-                  required
-                />
-                <label>Reason (optional)</label>
-                <textarea
-                  value={moveOutReason}
-                  onChange={e => setMoveOutReason(e.target.value)}
-                  placeholder="Reason for move-out"
-                />
-                <button type="submit" className="btn-primary" style={{ marginTop: '12px' }}>Submit Request</button>
-              </form>
-            )}
-          </div>
+          <TenantMoveOut notices={state.moveOut} onRefresh={fetchMoveOutStatus} />
         )}
 
         {activeTab === 'notifications' && (

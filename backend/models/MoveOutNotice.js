@@ -15,10 +15,24 @@ const moveOutNoticeSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  roomNumber: {
+    type: String,
+    trim: true
+  },
+  noticePeriodAcknowledgement: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
+  adminReply: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   status: {
     type: String,
-    enum: ['submitted', 'approved', 'rejected'],
-    default: 'submitted'
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
   },
   createdAt: {
     type: Date,
@@ -32,7 +46,9 @@ const moveOutNoticeSchema = new mongoose.Schema({
 
 moveOutNoticeSchema.pre('save', function(next) {
   this.updatedAt = new Date();
-  next();
+  if (typeof next === 'function') {
+    next();
+  }
 });
 
 module.exports = mongoose.model('MoveOutNotice', moveOutNoticeSchema);
