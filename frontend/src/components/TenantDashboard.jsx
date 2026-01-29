@@ -1,4 +1,4 @@
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useReducer, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
@@ -6,6 +6,8 @@ import TenantComplaints from './TenantComplaints';
 import TenantProfile from './TenantProfile';
 import SharedRooms from './SharedRooms';
 import TenantMoveOut from './TenantMoveOut';
+import TenantFeedback from './TenantFeedback';
+import TenantNotice from './TenantNotice';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
@@ -50,7 +52,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
 
   const getToken = () => localStorage.getItem('token');
 
-  const fetchMessMenu = async () => {
+  const fetchMessMenu = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/mess/menu/active`, {
         headers: { Authorization: `Bearer ${getToken()}` }
@@ -58,55 +60,55 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       dispatch({ type: 'SET_MENU', payload: res.data.menu || [] });
       dispatch({ type: 'SET_MENU_STATUS', payload: res.data.status });
     } catch (err) { console.error('Failed to load mess menu', err); }
-  };
+  }, []);
 
-  const fetchComplaints = async () => {
+  const fetchComplaints = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/complaints`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_COMPLAINTS', payload: res.data.complaints });
     } catch (err) { console.error('Failed to load complaints', err); }
-  };
+  }, []);
   
 
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/payments/my`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_PAYMENTS', payload: res.data.payments });
     } catch (err) { console.error('Failed to load payments', err); }
-  };
+  }, []);
 
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/rooms`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_ROOMS', payload: res.data.rooms });
     } catch (err) { console.error('Failed to load rooms', err); }
-  };
+  }, []);
 
-  const fetchMoveOutStatus = async () => {
+  const fetchMoveOutStatus = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/moveouts/me`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_MOVEOUT', payload: res.data.notices });
     } catch (err) { console.error('Failed to load move-out status', err); }
-  };
+  }, []);
 
-  const fetchRoomRequests = async () => {
+  const fetchRoomRequests = useCallback(async () => {
     try {
       const res = await axios.get(`${config.API_URL}/room-requests/my-requests`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       dispatch({ type: 'SET_ROOM_REQUESTS', payload: res.data.requests });
     } catch (err) { console.error('Failed to load room requests', err); }
-  };
+  }, []);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setNotificationsLoading(true);
       setNotificationsError('');
@@ -224,7 +226,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     } finally {
       setNotificationsLoading(false);
     }
-  };
+  }, []);
 
   /* ================= ACTIONS ================= */
   const handleLogout = () => {
@@ -359,7 +361,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     } else if (activeTab === 'notifications') {
       fetchNotifications();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchComplaints, fetchPayments, fetchRooms, fetchMoveOutStatus, fetchRoomRequests, fetchNotifications, fetchMessMenu]);
 
   useEffect(() => {
     if (activeTab !== 'mess') return;
@@ -370,7 +372,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [activeTab]);
+  }, [activeTab, fetchMessMenu]);
 
   /* ================= RENDER ================= */
   return (
@@ -393,7 +395,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
           </button>
         </div>
         <div className="sidebar-nav">
-          {['overview', 'mess', 'rooms', 'complaints', 'payments', 'moveout', 'notifications', 'profile'].map(tab => (
+          {['overview', 'mess', 'rooms', 'complaints', 'feedback', 'notices', 'payments', 'moveout', 'notifications', 'profile'].map(tab => (
             <button
               key={tab}
               className={activeTab === tab ? 'active' : ''}
@@ -417,6 +419,19 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               {tab === 'complaints' && (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              )}
+              {tab === 'feedback' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+                  <path d="M8 9h8"></path>
+                  <path d="M8 13h6"></path>
+                </svg>
+              )}
+              {tab === 'notices' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                 </svg>
               )}
               {tab === 'payments' && (
@@ -1028,6 +1043,18 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                 </ul>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'feedback' && (
+          <div className="content-area">
+            <TenantFeedback />
+          </div>
+        )}
+
+        {activeTab === 'notices' && (
+          <div className="content-area">
+            <TenantNotice />
           </div>
         )}
 

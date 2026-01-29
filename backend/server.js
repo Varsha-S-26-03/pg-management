@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
@@ -14,13 +16,28 @@ const complaintRoutes = require('./routers/complaints');
 const moveOutRoutes = require('./routers/moveouts');
 const roomRequestRoutes = require('./routers/roomRequests');
 const messRoutes = require('./routers/mess');
+const feedbackRoutes = require('./routers/feedback');
+const noticeRoutes = require('./routers/notices');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Make io accessible to routes
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // Serve static files from public directory
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
@@ -36,6 +53,26 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/moveouts', moveOutRoutes);
 app.use('/api/room-requests', roomRequestRoutes);
 app.use('/api/mess', messRoutes);
+app.use('/api/feedback', feedbackRoutes);
+// Attach io to requests for real-time notifications
+app.use('/api/notices', (req, res, next) => {
+  req.io = io;
+  next();
+}, noticeRoutes);
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 User connected:', socket.id);
+  
+  socket.on('join', (userId) => {
+    console.log(`👤 User ${userId} joined room`);
+    socket.join(userId);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 User disconnected:', socket.id);
+  });
+});
 
 // Health check route
 app.get('/', (req, res) => {
@@ -80,9 +117,10 @@ const startServer = async () => {
     await connectDB();
     console.log('✅ Database connection established');
     
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`✅ API available at http://localhost:${PORT}`);
+      console.log(`✅ Socket.io server running on port ${PORT}`);
     });
   } catch (err) {
     console.error('❌ Failed to connect to database:', err);

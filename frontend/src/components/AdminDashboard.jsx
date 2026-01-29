@@ -10,6 +10,10 @@ import AdminMessMenu from './AdminMessMenu';
 import Payments from './Payments';
 import ComplaintAdmin from './Complaint';
 import AdminMoveOutRequests from './AdminMoveOutRequests';
+import AdminFeedback from './AdminFeedback';
+import AdminNotice from './AdminNotice';
+import { showToast } from './toastApi';
+import { connectSocket, onFeedbackNotification, offFeedbackNotification } from '../socket';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -82,6 +86,27 @@ const AdminDashboard = ({ user, onLogout }) => {
       if (interval) clearInterval(interval);
     };
   }, [activeTab]);
+
+  // Socket.io connection for real-time notifications
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      connectSocket(user._id);
+      
+      // Listen for new feedback notifications
+      onFeedbackNotification((data) => {
+        showToast(`New feedback from ${data.tenantName}: ${data.category} - ${data.rating}★`, 'info');
+        // Refresh notifications and stats if on overview tab
+        if (activeTab === 'overview') {
+          fetchNotifications();
+          fetchStats();
+        }
+      });
+    }
+    
+    return () => {
+      offFeedbackNotification();
+    };
+  }, [user, activeTab]);
 
   const fetchPendingTenants = async () => {
     try {
@@ -571,6 +596,31 @@ const AdminDashboard = ({ user, onLogout }) => {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
             {!sidebarMinimized && 'Complaints'}
+          </button>
+
+          <button 
+            className={activeTab === 'feedback' ? 'active' : ''} 
+            onClick={() => setActiveTab('feedback')}
+            title="Feedback"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+              <path d="M8 9h8"></path>
+              <path d="M8 13h6"></path>
+            </svg>
+            {!sidebarMinimized && 'Feedback'}
+          </button>
+
+          <button 
+            className={activeTab === 'notices' ? 'active' : ''} 
+            onClick={() => setActiveTab('notices')}
+            title="Notices"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            {!sidebarMinimized && 'Notices'}
           </button>
 
           <button 
@@ -1174,6 +1224,8 @@ const AdminDashboard = ({ user, onLogout }) => {
         {activeTab === 'messmenu' && <AdminMessMenu />}
         {activeTab === 'payments' && <Payments />}
         {activeTab === 'complaints' && <ComplaintAdmin />}
+        {activeTab === 'feedback' && <AdminFeedback />}
+        {activeTab === 'notices' && <AdminNotice />}
         {activeTab === 'moveouts' && <AdminMoveOutRequests />}
 
         {activeTab === 'settings' && (
