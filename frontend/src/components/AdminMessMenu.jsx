@@ -159,7 +159,7 @@ const AdminMessMenu = () => {
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-header"><h2>Current Week</h2></div>
         {getFilteredItems().length === 0 ? (
-          <p className="placeholder-text">{searchQuery ? 'No matching menu items found' : 'No menu available'}</p>
+          <p className="placeholder-text">No menu available</p>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:12 }}>
             {getFilteredItems().map(it => (
