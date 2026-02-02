@@ -101,6 +101,10 @@ const ComplaintAdmin = () => {
     return s.label;
   };
 
+  const getFilteredComplaints = () => {
+    return complaints;
+  };
+
   return (
     <div className="content-area">
       <div className="page-header">
@@ -124,13 +128,13 @@ const ComplaintAdmin = () => {
           <div className="spinner" />
           <p>Loading complaints...</p>
         </div>
-      ) : complaints.length === 0 ? (
+      ) : getFilteredComplaints().length === 0 ? (
         <div className="card" style={{ textAlign: 'center' }}>
           <p className="placeholder-text">No complaints found.</p>
         </div>
       ) : (
         <div className="complaints-admin-grid">
-          {complaints.map((c) => (
+          {getFilteredComplaints().map((c) => (
             <div key={c._id} className="complaint-card">
               <div className="complaint-card-header">
                 <div>

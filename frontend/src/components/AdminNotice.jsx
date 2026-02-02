@@ -240,7 +240,7 @@ const AdminNotice = () => {
     try {
       const token = getToken();
       const response = await axios.delete(
-        `${config.API_URL}/notices/delete/${noticeId}`,
+        `${config.API_URL}/notices/${noticeId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -317,6 +317,10 @@ const AdminNotice = () => {
     }
   };
 
+  const getFilteredNotices = () => {
+    return notices;
+  };
+
   if (loading && notices.length === 0) {
     return (
       <div className="admin-notice-container">
@@ -381,7 +385,7 @@ const AdminNotice = () => {
       <div className="notices-section">
         <h3>All Notices</h3>
         
-        {notices.length === 0 ? (
+        {getFilteredNotices().length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📋</div>
             <h3>No notices found</h3>
@@ -390,7 +394,7 @@ const AdminNotice = () => {
         ) : (
           <>
             <div className="notices-table">
-              <table>
+              <table className="notice-table">
                 <thead>
                   <tr>
                     <th>Title</th>
@@ -402,7 +406,7 @@ const AdminNotice = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {notices.map((notice) => {
+                  {getFilteredNotices().map((notice) => {
                     const priority = PRIORITY_MAP[notice.priority] || PRIORITY_MAP.Normal;
                     return (
                       <tr key={notice._id}>

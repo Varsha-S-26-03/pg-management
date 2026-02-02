@@ -214,6 +214,10 @@ const AdminFeedback = () => {
     return () => clearTimeout(timeoutId);
   }, [filters, fetchFeedback]);
 
+  const getFilteredFeedback = () => {
+    return feedback;
+  };
+
   return (
     <div className="admin-feedback-container">
       <div className="feedback-header">
@@ -318,7 +322,7 @@ const AdminFeedback = () => {
       {/* Feedback List */}
       {loading ? (
         <div className="loading">Loading feedback...</div>
-      ) : feedback.length === 0 ? (
+      ) : getFilteredFeedback().length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">💬</div>
           <h3>No feedback found</h3>
@@ -327,7 +331,7 @@ const AdminFeedback = () => {
       ) : (
         <>
           <div className="feedback-list">
-            {feedback.map(item => (
+            {getFilteredFeedback().map(item => (
               <div key={item._id} className="feedback-card">
                 <div className="feedback-header">
                   <div className="feedback-info">

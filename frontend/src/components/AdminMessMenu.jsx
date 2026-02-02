@@ -91,6 +91,10 @@ const AdminMessMenu = () => {
 
   const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'short', day:'numeric' });
 
+  const getFilteredItems = () => {
+    return items;
+  };
+
   return (
     <div className="content-area">
       <div className="page-header">
@@ -154,11 +158,11 @@ const AdminMessMenu = () => {
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-header"><h2>Current Week</h2></div>
-        {items.length === 0 ? (
-          <p className="placeholder-text">No menu available</p>
+        {getFilteredItems().length === 0 ? (
+          <p className="placeholder-text">{searchQuery ? 'No matching menu items found' : 'No menu available'}</p>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:12 }}>
-            {items.map(it => (
+            {getFilteredItems().map(it => (
               <div key={it._id} className="admin-mess-card">
                 <div className="admin-mess-card-header">
                   <div>

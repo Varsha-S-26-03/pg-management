@@ -261,6 +261,10 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
     return request ? request.status : null;
   };
 
+  const getFilteredRooms = () => {
+    return rooms;
+  };
+
   return (
     <div className="content-area">
       <div className="page-header">
@@ -279,14 +283,14 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
         </div>
       ) : (
         <div>
-          {rooms && rooms.length === 0 && (
+          {getFilteredRooms().length === 0 && (
             <div className="card" style={{ padding: 24 }}>
               <h2>No rooms found</h2>
               <p style={{ color: '#6b7280' }}>No rooms available at the moment.</p>
             </div>
           )}
 
-          {Object.entries(groupByFloor(rooms)).map(([floor, list]) => (
+          {Object.entries(groupByFloor(getFilteredRooms())).map(([floor, list]) => (
             <div key={floor} style={{ marginBottom: 24 }}>
               <div className="card-header">
                 <h2>Floor {floor} • {list.length} rooms</h2>

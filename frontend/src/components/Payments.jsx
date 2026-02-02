@@ -74,6 +74,10 @@ const Payments = () => {
     }
   };
 
+  const getFilteredPayments = () => {
+    return payments;
+  };
+
   return (
     <div className="content-area">
       <div className="page-header">
@@ -88,7 +92,7 @@ const Payments = () => {
       ) : (
         <div className="card">
           <div className="card-header">
-            <h2>All Payments ({payments.length})</h2>
+            <h2>All Payments ({getFilteredPayments().length})</h2>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -106,7 +110,7 @@ const Payments = () => {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
+                {getFilteredPayments().map((payment) => (
                   <tr key={payment._id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                     <td style={{ padding: '12px' }}>{payment.tenant?.name || 'Tenant'}</td>
                     <td style={{ padding: '12px', textTransform: 'capitalize' }}>{payment.paymentType || 'rent'}</td>

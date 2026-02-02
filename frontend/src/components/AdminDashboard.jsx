@@ -13,7 +13,7 @@ import AdminMoveOutRequests from './AdminMoveOutRequests';
 import AdminFeedback from './AdminFeedback';
 import AdminNotice from './AdminNotice';
 import { showToast } from './toastApi';
-import { connectSocket, onFeedbackNotification, offFeedbackNotification } from '../socket';
+import { connectSocket, onFeedbackNotification, offFeedbackNotification, onNoticeNotification, onNoticeUpdate, onNoticeDelete, offNoticeNotifications } from '../socket';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -42,6 +42,14 @@ const AdminDashboard = ({ user, onLogout }) => {
   const [todaysMenu, setTodaysMenu] = useState(null);
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuError, setMenuError] = useState('');
+
+  const getFilteredUsers = () => {
+    return allUsers;
+  };
+
+  const getFilteredPendingTenants = () => {
+    return pendingTenants;
+  };
 
   useEffect(() => {
     if (activeTab === 'approvals') {
@@ -96,15 +104,40 @@ const AdminDashboard = ({ user, onLogout }) => {
       onFeedbackNotification((data) => {
         showToast(`New feedback from ${data.tenantName}: ${data.category} - ${data.rating}★`, 'info');
         // Refresh notifications and stats if on overview tab
-        if (activeTab === 'overview') {
+        if (activeTab === 'overview' || activeTab === 'notifications') {
           fetchNotifications();
           fetchStats();
+        }
+      });
+
+      // Listen for new notice notifications
+      onNoticeNotification((data) => {
+        showToast(`New notice published: ${data.title}`, 'info');
+        if (activeTab === 'overview' || activeTab === 'notifications') {
+          fetchNotifications();
+        }
+      });
+
+      // Listen for notice updates
+      onNoticeUpdate((data) => {
+        showToast(`Notice updated: ${data.title}`, 'info');
+        if (activeTab === 'overview' || activeTab === 'notifications') {
+          fetchNotifications();
+        }
+      });
+
+      // Listen for notice deletions
+      onNoticeDelete((data) => {
+        showToast(`Notice deleted: ${data.title}`, 'info');
+        if (activeTab === 'overview' || activeTab === 'notifications') {
+          fetchNotifications();
         }
       });
     }
     
     return () => {
       offFeedbackNotification();
+      offNoticeNotifications();
     };
   }, [user, activeTab]);
 
@@ -276,6 +309,42 @@ const AdminDashboard = ({ user, onLogout }) => {
         });
       } catch (err) {
         console.error('Error fetching mess menu for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/feedback/all`, { 
+            params: { limit: 10, sort: 'desc' }, 
+            headers 
+        });
+        const feedbacks = res.data.feedback || [];
+        feedbacks.slice(0, 10).forEach(f => {
+          list.push({
+            id: `feedback-${f._id}`,
+            type: 'alert',
+            message: `Feedback: ${f.category} (${f.rating}★) - ${f.tenantName}`,
+            timestamp: new Date(f.createdAt || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching feedback for notifications:', err);
+      }
+
+      try {
+        const res = await axios.get(`${config.API_URL}/notices/all`, { 
+            params: { limit: 10 },
+            headers 
+        });
+        const notices = res.data.notices || [];
+        notices.slice(0, 10).forEach(n => {
+          list.push({
+            id: `notice-${n._id}`,
+            type: 'system',
+            message: `Notice: ${n.title} (${n.priority})`,
+            timestamp: new Date(n.createdAt || Date.now())
+          });
+        });
+      } catch (err) {
+        console.error('Error fetching notices for notifications:', err);
       }
 
       list.sort((a, b) => b.timestamp - a.timestamp);
@@ -672,13 +741,6 @@ const AdminDashboard = ({ user, onLogout }) => {
 
       <main className="main-content">
         <header className="top-bar">
-          <div className="search-bar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <input type="text" placeholder="Search rooms, tenants, payments..." />
-          </div>
           <div className="top-bar-actions">
             <button className="icon-btn" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -856,13 +918,17 @@ const AdminDashboard = ({ user, onLogout }) => {
                 <h2>All caught up!</h2>
                 <p style={{ color: '#6b7280' }}>No pending tenant approvals at the moment.</p>
               </div>
+            ) : getFilteredPendingTenants().length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
+                <p style={{ color: '#6b7280' }}>No pending approvals match your search.</p>
+              </div>
             ) : (
               <div className="card">
                 <div className="card-header">
-                  <h2>Pending Approvals ({pendingTenants.length})</h2>
+                  <h2>Pending Approvals ({getFilteredPendingTenants().length})</h2>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {pendingTenants.map((tenant) => (
+                  {getFilteredPendingTenants().map((tenant) => (
                     <div key={tenant._id} style={{ 
                       padding: '20px', 
                       border: '1px solid #e5e7eb', 
@@ -1015,16 +1081,22 @@ const AdminDashboard = ({ user, onLogout }) => {
                 Refresh
               </button>
             </div>
+            
+
 
             {loading ? (
               <div style={{ textAlign: 'center', padding: '48px' }}>
                 <div className="spinner"></div>
                 <p>Loading users...</p>
               </div>
+            ) : getFilteredUsers().length === 0 ? (
+               <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
+                 <p style={{ color: '#6b7280' }}>No users match your search.</p>
+               </div>
             ) : (
               <div className="card">
                 <div className="card-header">
-                  <h2>Users ({allUsers.length})</h2>
+                  <h2>Users ({getFilteredUsers().length})</h2>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1039,7 +1111,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {allUsers.map((user) => (
+                      {getFilteredUsers().map((user) => (
                         <Fragment key={user._id}>
                           <tr 
                             style={{ 

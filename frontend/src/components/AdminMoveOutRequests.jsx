@@ -89,6 +89,10 @@ const AdminMoveOutRequests = () => {
     }
   };
 
+  const getFilteredRequests = () => {
+    return requests;
+  };
+
   return (
     <div className="content-area">
       <div className="moveout-container">
@@ -100,7 +104,7 @@ const AdminMoveOutRequests = () => {
         {error && <div className="error-message">{error}</div>}
         {loading ? (
           <div className="loading">Loading...</div>
-        ) : requests.length === 0 ? (
+        ) : getFilteredRequests().length === 0 ? (
           <div className="empty-state">No move-out requests found.</div>
         ) : (
           <div className="table-responsive">
@@ -116,7 +120,7 @@ const AdminMoveOutRequests = () => {
                 </tr>
               </thead>
               <tbody>
-                {requests.map(req => (
+                {getFilteredRequests().map(req => (
                   <tr key={req._id}>
                     <td>
                       <div>
