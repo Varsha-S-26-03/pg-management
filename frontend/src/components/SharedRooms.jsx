@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import config from '../config';
 import './Rooms.css';
+import Rooms from './Rooms';
 
 const SharedRooms = ({ userRole = 'tenant' }) => {
   const [rooms, setRooms] = useState([]);
@@ -16,6 +17,7 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
   const [selectedRoomForAllocation, setSelectedRoomForAllocation] = useState(null);
   const [unallocatedTenants, setUnallocatedTenants] = useState([]);
   const [selectedTenantId, setSelectedTenantId] = useState('');
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
 
   
 
@@ -37,7 +39,7 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
     return 'Dormitory';
   };
 
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
       const token = getToken();
       const res = await axios.get(`${config.API_URL}/rooms`, {
@@ -51,9 +53,9 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchRoomRequests = async () => {
+  const fetchRoomRequests = useCallback(async () => {
     if (userRole === 'tenant') {
       try {
         const token = localStorage.getItem('token');
@@ -66,12 +68,12 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
         console.error('Error fetching room requests:', error);
       }
     }
-  };
+  }, [userRole]);
 
   useEffect(() => {
     fetchRooms();
     fetchRoomRequests();
-  }, [userRole]);
+  }, [userRole, fetchRooms, fetchRoomRequests]);
 
   const handleChooseRoom = (room) => {
     console.log('handleChooseRoom called with room:', room);
@@ -267,14 +269,18 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
 
   return (
     <div className="content-area">
-      <div className="page-header">
-        <h1>Rooms</h1>
-        {userRole === 'admin' && (
-          <button className="btn-primary" onClick={() => window.location.href = '/admin/rooms'}>
-            Create Room
-          </button>
-        )}
-      </div>
+      {showCreateRoom ? (
+        <Rooms onBack={() => setShowCreateRoom(false)} />
+      ) : (
+        <>
+          <div className="page-header">
+            <h1>Rooms</h1>
+            {userRole === 'admin' && (
+              <button className="btn-primary" onClick={() => setShowCreateRoom(true)}>
+                Create Room
+              </button>
+            )}
+          </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px' }}>
@@ -576,6 +582,8 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

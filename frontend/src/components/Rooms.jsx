@@ -3,7 +3,7 @@ import axios from 'axios';
 import config from '../config';
 import './Rooms.css';
 
-const Rooms = () => {
+const Rooms = ({ onBack }) => {
   const [rooms, setRooms] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,7 @@ const Rooms = () => {
     price: '',
     floor: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const groupByFloor = (list) => {
     const map = {};
@@ -114,13 +115,17 @@ const Rooms = () => {
     }));
   };
 
+
+
   const openCreateModal = () => {
     setNewRoom({
       roomNumber: '',
       type: 'single',
       capacity: '',
       price: '',
-      floor: ''
+      floor: '',
+      amenities: '',
+      description: ''
     });
     setIsModalOpen(true);
   };
@@ -134,9 +139,19 @@ const Rooms = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${config.API_URL}/rooms`, {
+      console.log('🚀 Creating room with data:', {
+        roomNumber,
+        type,
+        capacity: Number(capacity),
+        price: Number(price),
+        floor: Number(floor || 1)
+      });
+      
+      const response = await axios.post(`${config.API_URL}/rooms`, {
         roomNumber,
         type, // Type is already normalized by the select input
         capacity: Number(capacity),
@@ -144,10 +159,16 @@ const Rooms = () => {
         floor: Number(floor || 1)
       }, { headers: { Authorization: `Bearer ${token}` } });
       
+      console.log('✅ Room created successfully:', response.data);
       setIsModalOpen(false);
       await fetchRooms();
     } catch (err) {
+      console.error('❌ Room creation failed:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error status:', err.response?.status);
       alert(err.response?.data?.message || 'Failed to create room');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -214,6 +235,11 @@ const Rooms = () => {
   return (
     <div className="content-area">
       <div className="page-header">
+        {onBack && (
+          <button className="btn-secondary" onClick={onBack} style={{ marginRight: '16px' }}>
+            ← Back to Rooms
+          </button>
+        )}
         <h1>Room Management</h1>
         <button className="btn-primary" onClick={openCreateModal}>Create Room</button>
       </div>
@@ -295,67 +321,134 @@ const Rooms = () => {
 
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Add New Room</h2>
+          <div className="modal-content room-modal">
+            <div className="modal-header room-modal-header">
+              <div className="header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div className="header-content">
+                <h2>Create New Room</h2>
+                <p>Add a new room to your property management system</p>
+              </div>
               <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
             </div>
-            <form onSubmit={handleCreateRoomSubmit}>
-              <div className="form-group">
-                <label>Room Number</label>
-                <input
-                  type="text"
-                  name="roomNumber"
-                  value={newRoom.roomNumber}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 101"
-                  required
-                />
+            <form onSubmit={handleCreateRoomSubmit} className="room-form">
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="text"
+                    name="roomNumber"
+                    value={newRoom.roomNumber}
+                    onChange={handleInputChange}
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏠</span>
+                    Room Number
+                  </label>
+                  <span className="input-hint">Unique identifier for the room</span>
+                </div>
+                <div className="form-group floating-label">
+                  <select 
+                    name="type" 
+                    value={newRoom.type} 
+                    onChange={handleInputChange}
+                    className="form-select"
+                    required
+                  >
+                    <option value="single">🏠 Single Room (1 Person)</option>
+                    <option value="double">👥 Double Room (2 People)</option>
+                    <option value="triple">👨‍👩‍👧 Triple Room (3 People)</option>
+                    <option value="dormitory">🏢 Dormitory (4+ People)</option>
+                  </select>
+                  <label className="form-label">
+                    <span className="label-icon">📋</span>
+                    Room Type
+                  </label>
+                  <span className="input-hint">Maximum occupancy type</span>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Type</label>
-                <select name="type" value={newRoom.type} onChange={handleInputChange}>
-                  <option value="single">Single (1)</option>
-                  <option value="double">Double (2)</option>
-                  <option value="triple">Triple (3)</option>
-                  <option value="dormitory">Dormitory (4+)</option>
-                </select>
+              
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={newRoom.capacity}
+                    onChange={handleInputChange}
+                    min="1"
+                    max="10"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">👥</span>
+                    Capacity
+                  </label>
+                  <span className="input-hint">Maximum number of occupants</span>
+                </div>
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="price"
+                    value={newRoom.price}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="100"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">₹</span>
+                    Monthly Rent
+                  </label>
+                  <span className="input-hint">Rent per month in INR</span>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Capacity</label>
-                <input
-                  type="number"
-                  name="capacity"
-                  value={newRoom.capacity}
-                  onChange={handleInputChange}
-                  min="1"
-                  required
-                />
+              
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="floor"
+                    value={newRoom.floor}
+                    onChange={handleInputChange}
+                    min="0"
+                    max="20"
+                    placeholder=" "
+                    className="form-input"
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏢</span>
+                    Floor
+                  </label>
+                  <span className="input-hint">Building floor number</span>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Price (₹)</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={newRoom.price}
-                  onChange={handleInputChange}
-                  min="0"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Floor</label>
-                <input
-                  type="number"
-                  name="floor"
-                  value={newRoom.floor}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 1"
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Room</button>
+              
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  <span>Cancel</span>
+                </button>
+                <button 
+                  type="submit" 
+                  className={`btn-create ${isSubmitting ? 'loading' : ''}`}
+                  disabled={!newRoom.roomNumber || !newRoom.type || !newRoom.capacity || !newRoom.price || isSubmitting}
+                >
+                  <span className="btn-icon">{isSubmitting ? '⏳' : '+'}</span>
+                  <span>{isSubmitting ? 'Creating...' : 'Create Room'}</span>
+                </button>
               </div>
             </form>
           </div>

@@ -17,10 +17,17 @@ router.get('/', authMiddleware, async (req, res) => {
 // Create a room (admin only)
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    console.log('🔍 Room creation request received');
+    console.log('👤 User role:', req.user.role);
+    console.log('📦 Request body:', req.body);
+    
     if (req.user.role !== 'admin') {
+      console.log('❌ Forbidden: User is not admin');
       return res.status(403).json({ message: 'Forbidden' });
     }
-    const { roomNumber, type, capacity, price, floor, amenities } = req.body;
+    
+    const { roomNumber, type, capacity, price, floor } = req.body;
+    
     const normalizeType = (val) => {
       const s = String(val || '').toLowerCase().trim();
       if (['single', '1', 'single share'].includes(s)) return 'single';
@@ -29,32 +36,40 @@ router.post('/', authMiddleware, async (req, res) => {
       if (['dormitory', 'dorm', '4', 'four', 'many', 'multiple'].includes(s)) return 'dormitory';
       return null;
     };
+    
     if (!roomNumber || !type || !capacity || price === undefined) {
+      console.log('❌ Missing required fields:', { roomNumber, type, capacity, price });
       return res.status(400).json({ message: 'roomNumber, type, capacity, price are required' });
     }
+    
     const exists = await Room.findOne({ roomNumber });
     if (exists) {
+      console.log('❌ Room number already exists:', roomNumber);
       return res.status(409).json({ message: 'Room number already exists' });
     }
+    
     const room = new Room({
       roomNumber: String(roomNumber).trim(),
       type: normalizeType(type),
       capacity: Number(capacity),
       price: Number(price),
       floor: floor !== undefined ? Number(floor) : 1,
-      amenities: Array.isArray(amenities) ? amenities : [],
       status: 'available',
       occupied: 0,
       tenants: [],
       createdBy: req.userId
     });
+    
     if (!room.type) {
+      console.log('❌ Invalid room type:', type);
       return res.status(400).json({ message: 'Invalid type. Use single/double/triple/dormitory or 1/2/3/4.' });
     }
+    
     await room.save();
+    console.log('✅ Room created successfully:', room.roomNumber);
     res.status(201).json({ message: 'Room created', room });
   } catch (error) {
-    console.error(error);
+    console.error('❌ Room creation error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
