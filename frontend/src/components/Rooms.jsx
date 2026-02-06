@@ -13,14 +13,80 @@ const Rooms = ({ onBack }) => {
   const [selectedRoomForAllocation, setSelectedRoomForAllocation] = useState(null);
   const [selectedTenantId, setSelectedTenantId] = useState('');
 
+  // Room pricing constants
+  const ROOM_PRICING = {
+    single: 10500,
+    double: 8500,
+    triple: 6500,
+    dormitory: 5500
+  };
+
+  // Room capacity mapping
+  const ROOM_CAPACITY = {
+    single: 1,
+    double: 2,
+    triple: 3,
+    dormitory: null // Will be set manually for dormitory
+  };
+
   const [newRoom, setNewRoom] = useState({
     roomNumber: '',
     type: 'single',
     capacity: '',
     price: '',
-    floor: ''
+    floor: '',
+    amenities: '',
+    description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPriceOverride, setIsPriceOverride] = useState(false);
+
+  // Generate room number based on floor and existing rooms
+  const generateRoomNumber = (floor) => {
+    if (!floor || floor < 0) return '';
+    
+    const floorRooms = rooms.filter(room => room.floor === floor);
+    const existingNumbers = floorRooms.map(room => {
+      const match = room.roomNumber.match(new RegExp(`^${floor}(\\d+)$`));
+      return match ? parseInt(match[1]) : 0;
+    });
+    
+    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+    const nextNumber = maxNumber + 1;
+    
+    // Format as floor + two-digit sequence (e.g., 101, 102, 201, 202)
+    return `${floor}${nextNumber.toString().padStart(2, '0')}`;
+  };
+
+  // Check if room number already exists
+  const isRoomNumberExists = (roomNumber) => {
+    return rooms.some(room => room.roomNumber === roomNumber);
+  };
+
+  // Handle room type change - auto set capacity and price
+  const handleRoomTypeChange = (type) => {
+    const capacity = ROOM_CAPACITY[type];
+    const price = ROOM_PRICING[type];
+    
+    setNewRoom(prev => ({
+      ...prev,
+      type,
+      capacity: capacity !== null ? capacity : prev.capacity,
+      price: !isPriceOverride ? price : prev.price
+    }));
+  };
+
+  // Handle floor change - auto generate room number
+  const handleFloorChange = (floor) => {
+    const floorNum = parseInt(floor) || 0;
+    const generatedRoomNumber = generateRoomNumber(floorNum);
+    
+    setNewRoom(prev => ({
+      ...prev,
+      floor: floorNum,
+      roomNumber: generatedRoomNumber
+    }));
+  };
 
   const groupByFloor = (list) => {
     const map = {};
@@ -109,25 +175,62 @@ const Rooms = ({ onBack }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewRoom(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'type') {
+      handleRoomTypeChange(value);
+    } else if (name === 'floor') {
+      handleFloorChange(value);
+    } else if (name === 'price') {
+      // When user manually changes price, enable override mode
+      setIsPriceOverride(true);
+      setNewRoom(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else if (name === 'roomNumber') {
+      // Check if room number exists when user types
+      if (isRoomNumberExists(value)) {
+        // You could show a warning here if needed
+        console.warn('Room number already exists:', value);
+      }
+      setNewRoom(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setNewRoom(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
 
 
   const openCreateModal = () => {
+    const defaultType = 'single';
+    const defaultFloor = 1;
+    const generatedRoomNumber = generateRoomNumber(defaultFloor);
+    
     setNewRoom({
-      roomNumber: '',
-      type: 'single',
-      capacity: '',
-      price: '',
-      floor: '',
+      roomNumber: generatedRoomNumber,
+      type: defaultType,
+      capacity: ROOM_CAPACITY[defaultType],
+      price: ROOM_PRICING[defaultType],
+      floor: defaultFloor,
       amenities: '',
       description: ''
     });
+    setIsPriceOverride(false);
     setIsModalOpen(true);
+  };
+
+  const resetPriceOverride = () => {
+    setIsPriceOverride(false);
+    setNewRoom(prev => ({
+      ...prev,
+      price: ROOM_PRICING[prev.type]
+    }));
   };
 
   const handleCreateRoomSubmit = async (e) => {
@@ -136,6 +239,12 @@ const Rooms = ({ onBack }) => {
     
     if (!roomNumber || !type || !capacity || !price) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    // Check if room number already exists
+    if (isRoomNumberExists(roomNumber)) {
+      alert('Room number already exists. Please choose a different room number.');
       return;
     }
 
@@ -339,6 +448,23 @@ const Rooms = ({ onBack }) => {
               <div className="form-row">
                 <div className="form-group floating-label">
                   <input
+                    type="number"
+                    name="floor"
+                    value={newRoom.floor}
+                    onChange={handleInputChange}
+                    min="0"
+                    max="20"
+                    placeholder=" "
+                    className="form-input"
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏢</span>
+                    Floor
+                  </label>
+                  <span className="input-hint">Building floor number</span>
+                </div>
+                <div className="form-group floating-label">
+                  <input
                     type="text"
                     name="roomNumber"
                     value={newRoom.roomNumber}
@@ -346,13 +472,22 @@ const Rooms = ({ onBack }) => {
                     placeholder=" "
                     className="form-input"
                     required
+                    style={{ backgroundColor: newRoom.roomNumber && isRoomNumberExists(newRoom.roomNumber) ? '#ffebee' : '#ffffff' }}
                   />
                   <label className="form-label">
                     <span className="label-icon">🏠</span>
                     Room Number
                   </label>
-                  <span className="input-hint">Unique identifier for the room</span>
+                  <span className="input-hint">Auto-generated based on floor (format: Floor+Sequence)</span>
+                  {newRoom.roomNumber && isRoomNumberExists(newRoom.roomNumber) && (
+                    <span className="error-hint" style={{ color: '#d32f2f', fontSize: '12px' }}>
+                      ⚠️ Room number already exists!
+                    </span>
+                  )}
                 </div>
+              </div>
+              
+              <div className="form-row">
                 <div className="form-group floating-label">
                   <select 
                     name="type" 
@@ -386,12 +521,17 @@ const Rooms = ({ onBack }) => {
                     placeholder=" "
                     className="form-input"
                     required
+                    disabled={newRoom.type !== 'dormitory' && ROOM_CAPACITY[newRoom.type] !== null}
                   />
                   <label className="form-label">
                     <span className="label-icon">👥</span>
                     Capacity
                   </label>
-                  <span className="input-hint">Maximum number of occupants</span>
+                  <span className="input-hint">
+                    {newRoom.type !== 'dormitory' && ROOM_CAPACITY[newRoom.type] !== null 
+                      ? `Auto-set for ${newRoom.type} room` 
+                      : 'Maximum number of occupants'}
+                  </span>
                 </div>
                 <div className="form-group floating-label">
                   <input
@@ -404,32 +544,35 @@ const Rooms = ({ onBack }) => {
                     placeholder=" "
                     className="form-input"
                     required
+                    style={{ backgroundColor: isPriceOverride ? '#fff3e0' : '#ffffff' }}
                   />
                   <label className="form-label">
                     <span className="label-icon">₹</span>
                     Monthly Rent
                   </label>
-                  <span className="input-hint">Rent per month in INR</span>
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group floating-label">
-                  <input
-                    type="number"
-                    name="floor"
-                    value={newRoom.floor}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="20"
-                    placeholder=" "
-                    className="form-input"
-                  />
-                  <label className="form-label">
-                    <span className="label-icon">🏢</span>
-                    Floor
-                  </label>
-                  <span className="input-hint">Building floor number</span>
+                  <span className="input-hint">
+                    {isPriceOverride 
+                      ? 'Custom price (override mode)' 
+                      : `Auto-set: ₹${ROOM_PRICING[newRoom.type].toLocaleString()}`}
+                  </span>
+                  {isPriceOverride && (
+                    <button 
+                      type="button"
+                      className="reset-price-btn"
+                      onClick={resetPriceOverride}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: '#1976d2', 
+                        cursor: 'pointer', 
+                        fontSize: '12px',
+                        textDecoration: 'underline',
+                        marginTop: '2px'
+                      }}
+                    >
+                      Reset to default price
+                    </button>
+                  )}
                 </div>
               </div>
               
