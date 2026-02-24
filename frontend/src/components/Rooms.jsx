@@ -12,6 +12,28 @@ const Rooms = ({ onBack }) => {
   const [unallocatedTenants, setUnallocatedTenants] = useState([]);
   const [selectedRoomForAllocation, setSelectedRoomForAllocation] = useState(null);
   const [selectedTenantId, setSelectedTenantId] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editRoom, setEditRoom] = useState({
+    id: '',
+    roomNumber: '',
+    type: 'single',
+    capacity: '',
+    price: '',
+    floor: 1,
+    status: 'available'
+  });
+
+  // Get user role and update tab title
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRole = user?.role || 'tenant';
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    // Update tab title based on user role
+    const titlePrefix = isAdmin ? 'Admin PGMs' : 'Tenant PGMs';
+    document.title = `${titlePrefix} - Rooms Management`;
+  }, [isAdmin]);
 
   // Room pricing constants
   const ROOM_PRICING = {
@@ -233,6 +255,47 @@ const Rooms = ({ onBack }) => {
     }));
   };
 
+  const openEditModal = (room) => {
+    setEditRoom({
+      id: room._id,
+      roomNumber: room.roomNumber,
+      type: room.type,
+      capacity: room.capacity,
+      price: room.price,
+      floor: room.floor,
+      status: room.status
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditRoom(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${config.API_URL}/rooms/${editRoom.id}`, {
+        roomNumber: editRoom.roomNumber,
+        type: editRoom.type,
+        capacity: Number(editRoom.capacity),
+        price: Number(editRoom.price),
+        floor: Number(editRoom.floor),
+        status: editRoom.status
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setIsEditModalOpen(false);
+      await fetchRooms();
+      alert('Room updated');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update room');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const handleCreateRoomSubmit = async (e) => {
     e.preventDefault();
     const { roomNumber, type, capacity, price, floor } = newRoom;
@@ -349,7 +412,20 @@ const Rooms = ({ onBack }) => {
             ← Back to Rooms
           </button>
         )}
-        <h1>Room Management</h1>
+        <h1>
+          Room Management 
+          <span style={{ 
+            fontSize: '0.6em', 
+            marginLeft: '12px', 
+            padding: '4px 8px', 
+            backgroundColor: isAdmin ? '#10b981' : '#3b82f6',
+            color: 'white',
+            borderRadius: '12px',
+            fontWeight: 'normal'
+          }}>
+            {isAdmin ? 'Admin PGMs' : 'Tenant PGMs'}
+          </span>
+        </h1>
         <button className="btn-primary" onClick={openCreateModal}>Create Room</button>
       </div>
       {loading ? (
@@ -390,6 +466,38 @@ const Rooms = ({ onBack }) => {
                         <p><strong>Occupied:</strong> {occupiedCount}{occupantNames.length ? ` (${occupantNames.join(', ')})` : ''}</p>
                         <p><strong>Vacant:</strong> {vacantCount}</p>
                         <p><strong>Price:</strong> ₹{room.price}</p>
+                        {isAdmin && (
+                          <div style={{ marginTop: 8 }}>
+                            <button
+                              className="btn-secondary"
+                              onClick={async () => {
+                                const input = window.prompt('Enter new monthly rent (₹):', String(room.price));
+                                if (input === null) return;
+                                const val = Number(input);
+                                if (!Number.isFinite(val) || val < 0) {
+                                  alert('Please enter a valid non-negative number');
+                                  return;
+                                }
+                                try {
+                                  const token = localStorage.getItem('token');
+                                  await axios.patch(
+                                    `${config.API_URL}/rooms/${room._id}`,
+                                    { price: val },
+                                    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+                                  );
+                                  await fetchRooms();
+                                  alert('Room price updated');
+                                } catch (err) {
+                                  console.error('Failed to update price:', err);
+                                  alert(err.response?.data?.message || 'Failed to update price');
+                                }
+                              }}
+                              style={{ padding: '6px 10px', fontSize: 12 }}
+                            >
+                              Change Price
+                            </button>
+                          </div>
+                        )}
                         {Array.isArray(room.tenants) && room.tenants.length > 0 && (
                           <div className="occupants">
                             <p><strong>Occupants:</strong></p>
@@ -415,6 +523,9 @@ const Rooms = ({ onBack }) => {
                         <div className="room-actions">
                           {vacantCount > 0 && (
                             <button className="btn-primary success" onClick={() => openAllocateModal(room)}>Allocate</button>
+                          )}
+                          {isAdmin && (
+                            <button className="btn-primary" onClick={() => openEditModal(room)}>Edit</button>
                           )}
                           <button className="btn-primary danger" onClick={() => deleteRoom(room._id)}>Delete</button>
                         </div>
@@ -627,6 +738,152 @@ const Rooms = ({ onBack }) => {
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsAllocateModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={unallocatedTenants.length === 0}>Allocate</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {isEditModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content room-modal">
+            <div className="modal-header room-modal-header">
+              <div className="header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div className="header-content">
+                <h2>Edit Room</h2>
+                <p>Update existing room details</p>
+              </div>
+              <button className="close-btn" onClick={() => setIsEditModalOpen(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="room-form">
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="floor"
+                    value={editRoom.floor}
+                    onChange={handleEditChange}
+                    min="0"
+                    max="20"
+                    placeholder=" "
+                    className="form-input"
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏢</span>
+                    Floor
+                  </label>
+                </div>
+                <div className="form-group floating-label">
+                  <input
+                    type="text"
+                    name="roomNumber"
+                    value={editRoom.roomNumber}
+                    onChange={handleEditChange}
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏠</span>
+                    Room Number
+                  </label>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <select 
+                    name="type" 
+                    value={editRoom.type} 
+                    onChange={handleEditChange}
+                    className="form-select"
+                    required
+                  >
+                    <option value="single">🏠 Single Room (1 Person)</option>
+                    <option value="double">👥 Double Room (2 People)</option>
+                    <option value="triple">👨‍👩‍👧 Triple Room (3 People)</option>
+                    <option value="dormitory">🏢 Dormitory (4+ People)</option>
+                  </select>
+                  <label className="form-label">
+                    <span className="label-icon">📋</span>
+                    Room Type
+                  </label>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={editRoom.capacity}
+                    onChange={handleEditChange}
+                    min="1"
+                    max="10"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">👥</span>
+                    Capacity
+                  </label>
+                </div>
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="price"
+                    value={editRoom.price}
+                    onChange={handleEditChange}
+                    min="0"
+                    step="100"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">₹</span>
+                    Monthly Rent
+                  </label>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <select 
+                    name="status" 
+                    value={editRoom.status} 
+                    onChange={handleEditChange}
+                    className="form-select"
+                    required
+                  >
+                    <option value="available">Available</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                  <label className="form-label">
+                    <span className="label-icon">🔧</span>
+                    Status
+                  </label>
+                </div>
+              </div>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={() => setIsEditModalOpen(false)}
+                >
+                  <span>Cancel</span>
+                </button>
+                <button 
+                  type="submit" 
+                  className={`btn-create ${editSubmitting ? 'loading' : ''}`}
+                  disabled={editSubmitting}
+                >
+                  <span className="btn-icon">{editSubmitting ? '⏳' : '✓'}</span>
+                  <span>{editSubmitting ? 'Saving...' : 'Save Changes'}</span>
+                </button>
               </div>
             </form>
           </div>

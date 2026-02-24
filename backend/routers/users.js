@@ -1,7 +1,9 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const authMiddleware = require('../middleware/auth');
+const tenantMiddleware = require('../middleware/tenantMiddleware');
 
 const router = express.Router();
 
@@ -102,7 +104,140 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/me', authMiddleware, async (req, res) => {
+// Move out user (change status to moved-out)
+router.put('/:id/move-out', authMiddleware, async (req, res) => {
+  try {
+    const requestingUser = await User.findById(req.userId);
+    if (!requestingUser || requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: admins only' });
+    }
+
+    const { moveOutDate } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update user status and move out date
+    user.status = 'moved-out';
+    user.moveOutDate = moveOutDate ? new Date(moveOutDate) : new Date();
+    user.isActive = false;
+    
+    await user.save();
+
+    res.json({ 
+      message: 'User moved out successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        status: user.status,
+        moveOutDate: user.moveOutDate
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Reactivate user (change status to active)
+router.put('/:id/reactivate', authMiddleware, async (req, res) => {
+  try {
+    const requestingUser = await User.findById(req.userId);
+    if (!requestingUser || requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: admins only' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update user status
+    user.status = 'active';
+    user.isActive = true;
+    user.moveOutDate = null;
+    
+    await user.save();
+
+    res.json({ 
+      message: 'User reactivated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.get('/me', async (req, res) => {
+  // Use different middleware based on user role
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token, authorization denied' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is moved out
+    if (user.status === 'moved-out') {
+      return res.status(403).json({ 
+        message: 'Your account has been deactivated. Please contact the PG owner for assistance.',
+        status: 'moved-out',
+        moveOutDate: user.moveOutDate,
+        userName: user.name
+      });
+    }
+    
+    // Continue with the rest of the logic...
+    const effectiveJoiningDate = user.joiningDate || user.createdAt;
+    const effectiveIsActive = typeof user.isActive === 'boolean' ? user.isActive : true;
+
+    let tenantDetails = {};
+    if (user.role === 'tenant') {
+      const Room = require('../models/Room');
+      const room = await Room.findOne({ tenants: user._id });
+      tenantDetails = {
+        roomNumber: room ? room.roomNumber : 'Not assigned',
+        rentAmount: room ? room.price : 0
+      };
+    }
+
+    const profileData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+      profileRole: user.profileRole,
+      joiningDate: effectiveJoiningDate,
+      isActive: effectiveIsActive,
+      approved: user.approved,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      profilePhoto: user.profilePhoto,
+      emergencyContact: user.emergencyContact,
+      status: user.status,
+      moveOutDate: user.moveOutDate,
+      ...tenantDetails
+    };
+
+    res.json(profileData);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Keep the original /me route but rename it for backward compatibility
+router.get('/me-old', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
     if (!user) {

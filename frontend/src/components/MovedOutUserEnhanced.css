@@ -1,0 +1,378 @@
+/* Moved Out User Styles */
+.moved-out-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.moved-out-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.moved-out-header {
+  margin-bottom: 30px;
+}
+
+.moved-out-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  display: block;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.moved-out-header h1 {
+  color: #374151;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.user-info {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.user-info h2 {
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.user-info .email {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 500;
+}
+
+.deactivation-details {
+  margin-bottom: 30px;
+  text-align: left;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item .label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item .value {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-moved-out {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #dc2626;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid #fecaca;
+}
+
+.message-box {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  text-align: left;
+  box-shadow: 0 8px 16px rgba(245, 158, 11, 0.2);
+}
+
+.message-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.message-content h3 {
+  color: #92400e;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.message-content p {
+  color: #78350f;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 500;
+}
+
+.action-section {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 2px solid #0ea5e9;
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 30px;
+  text-align: left;
+  box-shadow: 0 8px 16px rgba(14, 165, 233, 0.2);
+}
+
+.action-section h3 {
+  color: #0c4a6e;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.action-section p {
+  color: #075985;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  font-weight: 500;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #0c4a6e;
+  font-weight: 600;
+  padding: 8px 12px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.contact-item:hover {
+  background: rgba(14, 165, 233, 0.2);
+  transform: translateX(5px);
+}
+
+.contact-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.moved-out-footer {
+  border-top: 2px solid #e5e7eb;
+  padding-top: 25px;
+}
+
+.logout-button {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.logout-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+.logout-button:active {
+  transform: translateY(-1px);
+}
+
+.logout-icon {
+  font-size: 20px;
+}
+
+.moved-out-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.background-pattern {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.1) 10px,
+    rgba(255, 255, 255, 0.1) 20px
+  );
+  animation: pattern-move 20s linear infinite;
+}
+
+@keyframes pattern-move {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .moved-out-container {
+    padding: 15px;
+  }
+  
+  .moved-out-card {
+    padding: 30px 20px;
+    margin: 10px;
+  }
+  
+  .moved-out-header h1 {
+    font-size: 24px;
+  }
+  
+  .user-info h2 {
+    font-size: 20px;
+  }
+  
+  .message-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .contact-info {
+    align-items: flex-start;
+  }
+  
+  .logout-button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .moved-out-card {
+    padding: 25px 15px;
+  }
+  
+  .moved-out-header h1 {
+    font-size: 20px;
+  }
+  
+  .user-info h2 {
+    font-size: 18px;
+  }
+  
+  .message-content h3,
+  .action-section h3 {
+    font-size: 16px;
+  }
+  
+  .logout-button {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+  
+  .contact-item {
+    font-size: 13px;
+  }
+}

@@ -30,7 +30,14 @@ const Login = ({ onLogin }) => {
       const response = await axios.post(`${config.API_URL}/auth/login`, formData);
       onLogin(response.data.token, response.data.user);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      const errorData = err.response?.data;
+      
+      if (errorData?.status === 'moved-out') {
+        // Handle moved-out user case
+        setError(errorData.message || 'Your account has been deactivated. Please contact the PG owner.');
+      } else {
+        setError(errorData?.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

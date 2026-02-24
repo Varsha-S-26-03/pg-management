@@ -1,0 +1,301 @@
+/* Moved Out User Styles */
+.moved-out-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.moved-out-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.moved-out-header {
+  margin-bottom: 30px;
+}
+
+.moved-out-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.moved-out-header h1 {
+  color: #374151;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.user-info {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.user-info h2 {
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.user-info .email {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0;
+}
+
+.deactivation-details {
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item .label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.detail-item .value {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.status-moved-out {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message-box {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  text-align: left;
+}
+
+.message-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.message-content h3 {
+  color: #92400e;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.message-content p {
+  color: #78350f;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.action-section {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.action-section h3 {
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.action-section p {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.contact-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.moved-out-footer {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 25px;
+}
+
+.logout-button {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+.logout-icon {
+  font-size: 18px;
+}
+
+.moved-out-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.background-pattern {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.1) 10px,
+    rgba(255, 255, 255, 0.1) 20px
+  );
+  animation: pattern-move 20s linear infinite;
+}
+
+@keyframes pattern-move {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .moved-out-container {
+    padding: 15px;
+  }
+  
+  .moved-out-card {
+    padding: 30px 20px;
+    margin: 10px;
+  }
+  
+  .moved-out-header h1 {
+    font-size: 24px;
+  }
+  
+  .user-info h2 {
+    font-size: 20px;
+  }
+  
+  .message-box {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .date-filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .contact-info {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .moved-out-card {
+    padding: 25px 15px;
+  }
+  
+  .moved-out-header h1 {
+    font-size: 20px;
+  }
+  
+  .user-info h2 {
+    font-size: 18px;
+  }
+  
+  .action-section h3 {
+    font-size: 16px;
+  }
+  
+  .logout-button {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+}

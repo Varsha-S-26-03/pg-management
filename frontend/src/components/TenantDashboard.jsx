@@ -8,11 +8,21 @@ import SharedRooms from './SharedRooms';
 import TenantMoveOut from './TenantMoveOut';
 import TenantFeedback from './TenantFeedback';
 import TenantNotice from './TenantNotice';
+import PaymentGateway from './PaymentGateway';
 import './Dashboard.css';
 import './AdminDashboard.css';
 
 const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const user = initialUser || null;
+  const navigate = useNavigate();
+  
+  // Check if user is moved out and redirect
+  useEffect(() => {
+    if (user?.status === 'moved-out') {
+      navigate('/moved-out');
+    }
+  }, [user, navigate]);
+  
   const [activeTab, setActiveTab] = useState('overview');
   const initialState = {
     messMenu: [],
@@ -42,11 +52,158 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   const [notificationsError, setNotificationsError] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMonth, setPaymentMonth] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [paymentRefId, setPaymentRefId] = useState('');
-  const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [submittingPayment] = useState(false);
+  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
+  const [paymentGatewayData, setPaymentGatewayData] = useState(null);
+  const [profileCreatedAt, setProfileCreatedAt] = useState(null);
+ 
+  const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+  const dueDay = 5;
+  const computeSuggestedRent = (room, monthStr, notices, payments, joinDate) => {
+    if (!room) return 0;
+    const price = Number(room.price || 0);
+    if (!monthStr) return price;
+    const parts = String(monthStr).split('-');
+    if (parts.length !== 2) return price;
+    const y = Number(parts[0]);
+    const m = Number(parts[1]) - 1;
+    const dInMonth = daysInMonth(y, m);
+    const due = new Date(y, m, dueDay);
+    let moveOutDate = null;
+    if (Array.isArray(notices)) {
+      const approved = notices.filter(n => n.status === 'approved');
+      const withDates = approved.map(n => n.moveOutDate ? new Date(n.moveOutDate) : null).filter(Boolean);
+      if (withDates.length > 0) moveOutDate = withDates.sort((a, b) => a - b)[0];
+    }
+    let base = price;
+    if (moveOutDate) {
+      const moY = moveOutDate.getFullYear();
+      const moM = moveOutDate.getMonth();
+      // If selected month is after move-out month -> no rent
+      if (y > moY || (y === moY && m > moM)) {
+        base = 0;
+      } else if (y === moY && m === moM) {
+        // Same month -> prorate after due day
+        if (moveOutDate <= due) base = 0;
+        else {
+          const days = Math.min(dInMonth, moveOutDate.getDate()) - dueDay + 1;
+          const perDay = price / dInMonth;
+          base = Math.round(perDay * Math.max(0, days));
+        }
+      } else {
+        // Before move-out month -> full month rent
+        base = price;
+      }
+    }
+    const paidOk = p => ['paid','verified','completed'].includes(String(p.status || '').toLowerCase());
+    const toMonthInt = s => {
+      const vs = String(s || '').split('-');
+      if (vs.length !== 2) return null;
+      const yy = Number(vs[0]); const mm = Number(vs[1]);
+      if (!yy || !mm) return null;
+      return yy * 100 + mm;
+    };
+    const paymentMonthInt = p => {
+      const byBilling = toMonthInt(p.billingPeriod);
+      if (byBilling) return byBilling;
+      if (!p.date) return null;
+      const d = new Date(p.date);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.getFullYear() * 100 + (d.getMonth() + 1);
+    };
+    const selInt = toMonthInt(monthStr);
+    let arrears = 0;
+    if (selInt) {
+      const monthsBack = [];
+      const start = new Date(y, m, 1);
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date(start);
+        d.setMonth(d.getMonth() - i);
+        const mi = d.getFullYear() * 100 + (d.getMonth() + 1);
+        monthsBack.push(mi);
+      }
+      const joinInt = joinDate ? (new Date(joinDate).getFullYear() * 100 + (new Date(joinDate).getMonth() + 1)) : null;
+      for (const mi of monthsBack) {
+        if (mi >= selInt) continue;
+        if (joinInt && mi < joinInt) continue;
+        const hasPaid = payments.some(p => paymentMonthInt(p) === mi && paidOk(p) && (p.paymentType || 'rent') === 'rent');
+        if (!hasPaid) arrears += price;
+      }
+    }
+    return base + arrears;
+  };
+  const computePayableBreakdown = (room, monthStr, notices, payments, joinDate) => {
+    if (!room) return { total: 0, base: 0, arrears: 0, arrearsMonths: 0 };
+    const price = Number(room.price || 0);
+    const total = computeSuggestedRent(room, monthStr, notices, payments, joinDate);
+    const parts = String(monthStr).split('-');
+    if (parts.length !== 2) return { total, base: price, arrears: Math.max(0, total - price), arrearsMonths: 0 };
+    const y = Number(parts[0]);
+    const m = Number(parts[1]) - 1;
+    const dInMonth = daysInMonth(y, m);
+    const due = new Date(y, m, dueDay);
+    let moveOutDate = null;
+    if (Array.isArray(notices)) {
+      const approved = notices.filter(n => n.status === 'approved');
+      const withDates = approved.map(n => n.moveOutDate ? new Date(n.moveOutDate) : null).filter(Boolean);
+      if (withDates.length > 0) moveOutDate = withDates.sort((a, b) => a - b)[0];
+    }
+    let base = price;
+    if (moveOutDate) {
+      const moY = moveOutDate.getFullYear();
+      const moM = moveOutDate.getMonth();
+      if (y > moY || (y === moY && m > moM)) {
+        base = 0;
+      } else if (y === moY && m === moM) {
+        if (moveOutDate <= due) base = 0;
+        else {
+          const days = Math.min(dInMonth, moveOutDate.getDate()) - dueDay + 1;
+          const perDay = price / dInMonth;
+          base = Math.round(perDay * Math.max(0, days));
+        }
+      } else {
+        base = price;
+      }
+    }
+    const toMonthInt = s => {
+      const vs = String(s || '').split('-');
+      if (vs.length !== 2) return null;
+      const yy = Number(vs[0]); const mm = Number(vs[1]);
+      if (!yy || !mm) return null;
+      return yy * 100 + mm;
+    };
+    const paidOk = p => ['paid','verified','completed'].includes(String(p.status || '').toLowerCase());
+    const paymentMonthInt = p => {
+      const byBilling = toMonthInt(p.billingPeriod);
+      if (byBilling) return byBilling;
+      if (!p.date) return null;
+      const d = new Date(p.date);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.getFullYear() * 100 + (d.getMonth() + 1);
+    };
+    const selInt = toMonthInt(monthStr);
+    let arrearsMonths = 0;
+    if (selInt) {
+      const monthsBack = [];
+      const start = new Date(y, m, 1);
+      for (let i = 1; i <= 12; i++) {
+        const d = new Date(start);
+        d.setMonth(d.getMonth() - i);
+        const mi = d.getFullYear() * 100 + (d.getMonth() + 1);
+        monthsBack.push(mi);
+      }
+      const joinInt = joinDate ? (new Date(joinDate).getFullYear() * 100 + (new Date(joinDate).getMonth() + 1)) : null;
+      for (const mi of monthsBack) {
+        if (mi >= selInt) continue;
+        if (joinInt && mi < joinInt) continue;
+        const hasPaid = payments.some(p => paymentMonthInt(p) === mi && paidOk(p) && (p.paymentType || 'rent') === 'rent');
+        if (!hasPaid) arrearsMonths += 1;
+      }
+    }
+    const arrears = Math.max(0, total - base);
+    return { total, base, arrears, arrearsMonths };
+  };
 
-  const navigate = useNavigate();
 
   /* ================= FETCH DATA ================= */
 
@@ -255,31 +412,27 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
       alert('Please enter amount');
       return;
     }
-    try {
-      setSubmittingPayment(true);
-      await axios.post(
-        `${config.API_URL}/payments`,
-        {
-          amount: Number(paymentAmount),
-          paymentType: 'rent',
-          billingPeriod: paymentMonth,
-          method: paymentMethod,
-          referenceId: paymentRefId
-        },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      setPaymentAmount('');
-      setPaymentMonth('');
-      setPaymentMethod('upi');
-      setPaymentRefId('');
-      fetchPayments();
-      alert('Payment submitted for review');
-    } catch (err) {
-      console.error('Failed to submit payment:', err);
-      alert(err.response?.data?.message || 'Failed to submit payment');
-    } finally {
-      setSubmittingPayment(false);
-    }
+    
+    // Open payment gateway
+    setPaymentGatewayData({
+      amount: Number(paymentAmount),
+      billingPeriod: paymentMonth || new Date().toISOString().slice(0, 7)
+    });
+    setShowPaymentGateway(true);
+  };
+
+  const handlePaymentSuccess = async (paymentResult) => {
+    console.log('Payment successful:', paymentResult);
+    setShowPaymentGateway(false);
+    setPaymentAmount('');
+    setPaymentMonth('');
+    fetchPayments();
+    alert('Payment initiated successfully! Please complete the payment in your chosen app and save the transaction ID.');
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentGateway(false);
+    setPaymentGatewayData(null);
   };
 
   /* ================= HELPERS ================= */
@@ -364,6 +517,35 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
   }, [activeTab, fetchComplaints, fetchPayments, fetchRooms, fetchMoveOutStatus, fetchRoomRequests, fetchNotifications, fetchMessMenu]);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = getToken();
+        const res = await axios.get(`${config.API_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res?.data?.createdAt) {
+          setProfileCreatedAt(res.data.createdAt);
+        }
+      } catch {
+        setProfileCreatedAt(prev => prev);
+      }
+    };
+    if (!profileCreatedAt) {
+      fetchProfile();
+    }
+  }, [profileCreatedAt]);
+
+  useEffect(() => {
+    if (activeTab !== 'payments') return;
+    const room = findTenantRoom();
+    const monthStr = paymentMonth || new Date().toISOString().slice(0, 7);
+    const suggested = computeSuggestedRent(room, monthStr, state.moveOut, state.payments, profileCreatedAt);
+    if (!paymentAmount || Number(paymentAmount) === 0) {
+      setPaymentAmount(String(suggested || 0));
+    }
+  }, [activeTab, paymentMonth, state.rooms, state.moveOut, state.payments, profileCreatedAt, paymentAmount]);
+
+  useEffect(() => {
     if (activeTab !== 'mess') return;
     let timer = setInterval(() => {
       fetchMessMenu();
@@ -384,7 +566,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
-            PG Manager
+            Tenant Dashboard
           </div>
           <button className="icon-btn" onClick={() => setSidebarMinimized(v => !v)} aria-label="Toggle sidebar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -480,13 +662,23 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               const rentPaid = currentMonthPaid();
               const rentDue = nextDueDate();
               const roomOccupancy = room ? ((room.occupied || 0) >= (room.capacity || 0) ? 'full' : 'available') : 'unassigned';
-              const depositPill = dep.status === 'paid' ? 'paid' : 'pending';
+              const depositPill = dep.status === 'verified' ? 'paid' : 'pending';
               return (
                 <div className="tenant-overview">
                   <div className="page-header tenant-overview-header">
                     <div className="tenant-overview-title">
                       <h1>Welcome back, {user?.name}</h1>
                       <p>Your latest snapshot: room, rent, and requests at a glance.</p>
+                      <div style={{ marginTop: '8px' }}>
+                        <span className={`status-badge ${user?.status || 'active'}`}>
+                          Status: {(user?.status || 'active').toUpperCase()}
+                        </span>
+                        {user?.status === 'moved-out' && user?.moveOutDate && (
+                          <span style={{ marginLeft: '10px', color: '#6b7280', fontSize: '14px' }}>
+                            Moved out: {new Date(user.moveOutDate).toLocaleDateString('en-IN')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="tenant-overview-actions">
                       <button className="btn-secondary tenant-action-btn" onClick={() => setActiveTab('payments')}>
@@ -691,6 +883,15 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                 </div>
               );
             })()}
+            
+            {showPaymentGateway && paymentGatewayData && (
+              <PaymentGateway
+                amount={paymentGatewayData.amount}
+                billingPeriod={paymentGatewayData.billingPeriod}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentCancel={handlePaymentCancel}
+              />
+            )}
           </div>
         )}
 
@@ -853,6 +1054,12 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
               const room = findTenantRoom();
               const due = nextDueDate();
               const paid = currentMonthPaid();
+              const currentMonthStr = paymentMonth || new Date().toISOString().slice(0, 7);
+              const breakdown = computePayableBreakdown(room, currentMonthStr, state.moveOut, state.payments, profileCreatedAt);
+              const dParts = currentMonthStr.split('-');
+              const dYear = Number(dParts[0]);
+              const dMonth = Number(dParts[1]) - 1;
+              const dueForSelected = new Date(dYear, dMonth, dueDay);
               return (
                 <div>
                   <div className="card" style={{ marginBottom: '16px', padding: '20px' }}>
@@ -862,7 +1069,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                         <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>Securely submit your monthly rent to the PG</p>
                       </div>
                       <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
-                        <div>Next Due: {due.toLocaleDateString('en-IN')}</div>
+                        <div>Due: {dueForSelected.toLocaleDateString('en-IN')}</div>
                         <div>Status: {paid ? 'Verified' : 'Pending'}</div>
                       </div>
                     </div>
@@ -887,6 +1094,9 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                             onChange={e => setPaymentAmount(e.target.value)}
                             placeholder={room?.price ? String(room.price) : 'Enter amount'}
                           />
+                          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                            Calculated payable: ₹{breakdown.total || 0} • Base: ₹{breakdown.base || 0} • Arrears ({breakdown.arrearsMonths}): ₹{breakdown.arrears || 0}
+                          </div>
                         </div>
                         <div className="field-group">
                           <label>Month / Period</label>
@@ -898,28 +1108,11 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                           />
                         </div>
                         <div className="field-group">
-                          <label>Method</label>
-                          <select
-                            className="form-input"
-                            value={paymentMethod}
-                            onChange={e => setPaymentMethod(e.target.value)}
-                          >
-                            <option value="upi">UPI</option>
-                            <option value="cash">Cash</option>
-                            <option value="netbanking">Net Banking</option>
-                            <option value="card">Card</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                        <div className="field-group">
-                          <label>Transaction / Reference ID</label>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={paymentRefId}
-                            onChange={e => setPaymentRefId(e.target.value)}
-                            placeholder="UPI reference or transaction ID"
-                          />
+                          <label>Payment Method</label>
+                          <div className="field-value">UPI Payment Gateway</div>
+                          <small style={{ color: '#6b7280', fontSize: '12px' }}>
+                            Secure payment via Google Pay, PhonePe, Paytm, or any UPI app
+                          </small>
                         </div>
                       </div>
                       <div className="profile-actions" style={{ justifyContent: 'flex-start' }}>
@@ -932,7 +1125,7 @@ const TenantDashboard = ({ user: initialUser, onLogout }) => {
                   <div className="card">
                     <h2>Monthly Rent</h2>
                     <p>Amount: ₹{room?.price || 0}</p>
-                    <p>Due Date: {due.toLocaleDateString('en-IN')}</p>
+                    <p>Due Date: {dueForSelected.toLocaleDateString('en-IN')}</p>
                     <p>Status: {paid ? 'Verified' : 'Pending'}</p>
                     <p>{paid ? 'No upcoming reminders' : (new Date() > due ? 'Overdue rent' : 'Upcoming rent due')}</p>
                   </div>

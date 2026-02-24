@@ -442,6 +442,252 @@
 .icon-approved { background-color: #e6fcf5; color: #0ca678; }
 .icon-owners { background-color: #f8f0fc; color: #845ef7; }
 
+/* User Search Styles */
+.user-search-container {
+  position: relative;
+  display: inline-block;
+}
+
+.user-search-input {
+  width: 250px;
+  padding: 10px 35px 10px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.user-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.user-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.user-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 18px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.user-search-clear:hover {
+  color: #374151;
+}
+
+.user-search-container ::placeholder {
+  color: #9ca3af;
+}
+
+/* User Filter Controls */
+.user-filter-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.user-filter-select {
+  min-width: 150px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .user-search-input {
+    width: 100%;
+  }
+  
+  .user-filter-select {
+    width: 100%;
+  }
+  
+  .date-filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .date-filter-group {
+    min-width: auto;
+  }
+  
+  .date-filter-info {
+    min-width: auto;
+    margin-top: 10px;
+  }
+}
+
+/* Date Filters */
+.date-filters-container {
+  background: #f8f9fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+}
+
+.date-filters-container .btn-secondary {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.date-filters-container .btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.2);
+}
+
+.date-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  position: relative;
+}
+
+.date-filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-filter-group input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.date-filter-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-date-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 16px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.clear-date-btn:hover {
+  color: #374151;
+}
+
+.date-filter-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.date-filter-info small {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Search Results Info */
+.search-results-info {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.search-results-info strong {
+  color: #374151;
+}
+
+/* Search Suggestions */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background-color: #f9fafb;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:active {
+  background-color: #e5e7eb;
+}
+
 .tenant-overview {
   max-width: 1200px;
   margin: 0 auto;

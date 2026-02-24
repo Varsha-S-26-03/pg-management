@@ -1,8 +1,77 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const Room = require('../models/Room');
 const User = require('../models/User');
+
+// Update room (admin only) - supports updating price and basic fields
+router.patch('/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid room id' });
+    }
+    const updates = {};
+    if (req.body.roomNumber !== undefined) {
+      const rn = String(req.body.roomNumber).trim();
+      if (!rn) {
+        return res.status(400).json({ message: 'Invalid room number' });
+      }
+      const exists = await Room.findOne({ roomNumber: rn, _id: { $ne: req.params.id } });
+      if (exists) {
+        return res.status(409).json({ message: 'Room number already exists' });
+      }
+      updates.roomNumber = rn;
+    }
+    if (req.body.floor !== undefined) {
+      const f = Number(req.body.floor);
+      if (Number.isNaN(f) || f < 0) {
+        return res.status(400).json({ message: 'Invalid floor' });
+      }
+      updates.floor = f;
+    }
+    if (req.body.price !== undefined) {
+      const p = Number(req.body.price);
+      if (Number.isNaN(p) || p < 0) {
+        return res.status(400).json({ message: 'Invalid price' });
+      }
+      updates.price = p;
+    }
+    if (req.body.status) {
+      updates.status = req.body.status;
+    }
+    if (req.body.type) {
+      updates.type = req.body.type;
+    }
+    if (req.body.capacity !== undefined) {
+      const c = Number(req.body.capacity);
+      if (Number.isNaN(c) || c < 1) {
+        return res.status(400).json({ message: 'Invalid capacity' });
+      }
+      updates.capacity = c;
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+    const room = await Room.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+    res.json({ message: 'Room updated', room });
+  } catch (error) {
+    console.error('Room update error:', error);
+    if (error && error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error && error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid data format' });
+    }
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 router.get('/', authMiddleware, async (req, res) => {
   try {

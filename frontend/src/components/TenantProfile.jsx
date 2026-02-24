@@ -37,7 +37,15 @@ const TenantProfile = ({ user: initialUser }) => {
       setFormData(initialFormData);
     } catch (err) {
       console.error('Error fetching profile:', err);
-      setError(err.response?.data?.message || 'Failed to load profile');
+      const errorData = err.response?.data;
+      
+      if (errorData?.status === 'moved-out') {
+        // Handle moved-out user case
+        setError('Your account has been deactivated. Please contact the PG owner for assistance.');
+        // You could also redirect to moved-out page here if needed
+      } else {
+        setError(err.response?.data?.message || 'Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }
@@ -230,6 +238,20 @@ const TenantProfile = ({ user: initialUser }) => {
                 <label>Email Address</label>
                 <div className="field-value read-only">{profile.email}</div>
                 <small className="field-note">Email cannot be changed</small>
+              </div>
+
+              <div className="field-group">
+                <label>Account Status</label>
+                <div className="field-value">
+                  <span className={`status-badge ${profile.status || 'active'}`}>
+                    {(profile.status || 'active').toUpperCase()}
+                  </span>
+                  {profile.status === 'moved-out' && profile.moveOutDate && (
+                    <div style={{ marginTop: '8px', fontSize: '14px', color: '#6b7280' }}>
+                      Moved out on: {new Date(profile.moveOutDate).toLocaleDateString('en-IN')}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="field-group">

@@ -42,10 +42,294 @@ const AdminDashboard = ({ user, onLogout }) => {
   const [todaysMenu, setTodaysMenu] = useState(null);
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuError, setMenuError] = useState('');
+  const [userFilter, setUserFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
+  const [_searchSuggestions, _setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [joinDateFilter, setJoinDateFilter] = useState('');
+  const [joinMonthFilter, setJoinMonthFilter] = useState('');
+  const [showDateFilters, setShowDateFilters] = useState(false);
 
   const getFilteredUsers = () => {
-    return allUsers;
+    let filtered = allUsers.filter(user => userFilter === 'all' || user.status === userFilter);
+    
+    // Apply text search
+    if (userSearch.trim()) {
+      const searchTerm = userSearch.toLowerCase().trim();
+      filtered = filtered.filter(user => {
+        return (
+          user.name.toLowerCase().includes(searchTerm) ||
+          user.email.toLowerCase().includes(searchTerm) ||
+          (user.roomNumber && user.roomNumber.toString().includes(searchTerm)) ||
+          (user.role && user.role.toLowerCase().includes(searchTerm)) ||
+          (user.status && user.status.toLowerCase().includes(searchTerm)) ||
+          (user.phone && user.phone.includes(searchTerm)) ||
+          (user.address && user.address.toLowerCase().includes(searchTerm))
+        );
+      });
+    }
+    
+    // Apply join date filtering
+    if (joinDateFilter) {
+      const targetDate = new Date(joinDateFilter);
+      filtered = filtered.filter(user => {
+        const joinDate = new Date(user.createdAt || user.joiningDate);
+        return joinDate.toDateString() === targetDate.toDateString();
+      });
+    }
+    
+    // Apply join month filtering
+    if (joinMonthFilter) {
+      const [year, month] = joinMonthFilter.split('-').map(Number);
+      filtered = filtered.filter(user => {
+        const joinDate = new Date(user.createdAt || user.joiningDate);
+        return joinDate.getFullYear() === year && joinDate.getMonth() === month - 1;
+      });
+    }
+    
+    // Special search for "active in [month]" or "joined in [month]"
+    if (userSearch.trim()) {
+      const searchTerm = userSearch.toLowerCase().trim();
+      
+      // Check for month/year patterns like "january 2024", "jan 2024", "2024-01"
+      const monthYearMatch = searchTerm.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*(\d{4})|(\d{4})-(\d{2})/);
+      
+      if (monthYearMatch) {
+        let targetMonth, targetYear;
+        
+        if (monthYearMatch[3] && monthYearMatch[4]) {
+          // Format: 2024-01
+          targetYear = parseInt(monthYearMatch[3]);
+          targetMonth = parseInt(monthYearMatch[4]) - 1;
+        } else {
+          // Format: january 2024 or jan 2024
+          const monthNames = {
+            'january': 0, 'jan': 0, 'february': 1, 'feb': 1, 'march': 2, 'mar': 2,
+            'april': 3, 'apr': 3, 'may': 4, 'june': 5, 'jun': 5, 'july': 6, 'jul': 6,
+            'august': 7, 'aug': 7, 'september': 8, 'sep': 8, 'october': 9, 'oct': 9,
+            'november': 10, 'nov': 10, 'december': 11, 'dec': 11
+          };
+          targetMonth = monthNames[monthYearMatch[1].toLowerCase()];
+          targetYear = parseInt(monthYearMatch[2]);
+        }
+        
+        if (targetMonth !== undefined && targetYear) {
+          filtered = filtered.filter(user => {
+            const joinDate = new Date(user.createdAt || user.joiningDate);
+            return joinDate.getFullYear() === targetYear && joinDate.getMonth() === targetMonth;
+          });
+        }
+      }
+      
+      // Check for "active users" search
+      if (searchTerm.includes('active') && searchTerm.includes('user')) {
+        filtered = filtered.filter(user => user.status === 'active');
+      }
+      
+      // Check for "moved out" search
+      if (searchTerm.includes('moved') && searchTerm.includes('out')) {
+        filtered = filtered.filter(user => user.status === 'moved-out');
+      }
+      
+      // Check for "joined last month" search
+      if (searchTerm.includes('joined') && searchTerm.includes('last') && searchTerm.includes('month')) {
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        filtered = filtered.filter(user => {
+          const joinDate = new Date(user.createdAt || user.joiningDate);
+          return joinDate.getFullYear() === lastMonth.getFullYear() && 
+                 joinDate.getMonth() === lastMonth.getMonth();
+        });
+      }
+      
+      // Check for "joined this month" search
+      if (searchTerm.includes('joined') && searchTerm.includes('this') && searchTerm.includes('month')) {
+        const thisMonth = new Date();
+        filtered = filtered.filter(user => {
+          const joinDate = new Date(user.createdAt || user.joiningDate);
+          return joinDate.getFullYear() === thisMonth.getFullYear() && 
+                 joinDate.getMonth() === thisMonth.getMonth();
+        });
+      }
+      
+      // Check for "active users in [month] [year]" search
+      if (searchTerm.includes('active') && searchTerm.includes('user')) {
+        const monthYearMatch = searchTerm.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*(\d{4})|(\d{4})-(\d{2})/);
+        
+        if (monthYearMatch) {
+          let targetMonth, targetYear;
+          
+          if (monthYearMatch[3] && monthYearMatch[4]) {
+            // Format: 2024-01
+            targetYear = parseInt(monthYearMatch[3]);
+            targetMonth = parseInt(monthYearMatch[4]) - 1;
+          } else if (monthYearMatch[1] && monthYearMatch[2]) {
+            // Format: january 2024 or jan 2024
+            const monthNames = {
+              'january': 0, 'jan': 0, 'february': 1, 'feb': 1, 'march': 2, 'mar': 2,
+              'april': 3, 'apr': 3, 'may': 4, 'june': 5, 'jun': 5, 'july': 6, 'jul': 6,
+              'august': 7, 'aug': 7, 'september': 8, 'sep': 8, 'october': 9, 'oct': 9,
+              'november': 10, 'nov': 10, 'december': 11, 'dec': 11
+            };
+            targetMonth = monthNames[monthYearMatch[1].toLowerCase()];
+            targetYear = parseInt(monthYearMatch[2]);
+          }
+          
+          if (targetMonth !== undefined && targetYear) {
+            filtered = getActiveUsersForMonth(targetYear, targetMonth);
+          }
+        }
+      }
+    }
+    
+    return filtered;
   };
+
+  // Function to get active users for a specific month
+  const getActiveUsersForMonth = (year, month) => {
+    return allUsers.filter(user => {
+      const joinDate = new Date(user.createdAt || user.joiningDate);
+      const isJoinedBeforeOrDuring = joinDate.getFullYear() < year || 
+                                   (joinDate.getFullYear() === year && joinDate.getMonth() <= month);
+      
+      const isNotMovedOut = !user.moveOutDate || 
+                           new Date(user.moveOutDate).getFullYear() > year ||
+                           (new Date(user.moveOutDate).getFullYear() === year && 
+                            new Date(user.moveOutDate).getMonth() > month);
+      
+      return isJoinedBeforeOrDuring && isNotMovedOut && user.status === 'active';
+    });
+  };
+
+  // Function to export filtered users as CSV
+  const exportFilteredUsers = () => {
+    const filteredUsers = getFilteredUsers();
+    
+    if (filteredUsers.length === 0) {
+      alert('No users to export');
+      return;
+    }
+    
+    // CSV headers
+    const headers = ['Name', 'Email', 'Phone', 'Room Number', 'Role', 'Status', 'Join Date', 'Move Out Date', 'Address'];
+    
+    // CSV data
+    const csvData = filteredUsers.map(user => [
+      user.name,
+      user.email,
+      user.phone || '',
+      user.roomNumber || '',
+      user.role,
+      user.status || 'active',
+      new Date(user.createdAt || user.joiningDate).toLocaleDateString('en-IN'),
+      user.moveOutDate ? new Date(user.moveOutDate).toLocaleDateString('en-IN') : '',
+      user.address || ''
+    ]);
+    
+    // Combine headers and data
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Function to highlight search terms in text
+  const highlightSearchTerm = (text, searchTerm) => {
+    if (!searchTerm.trim() || !text) return text;
+    
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.toString().split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <span key={index} style={{ backgroundColor: '#fef3c7', fontWeight: 'bold' }}>
+          {part}
+        </span>
+      ) : part
+    );
+  };
+
+  // Handle keyboard shortcuts for search
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setUserSearch('');
+      setShowSuggestions(false);
+    } else if (e.ctrlKey && e.key === 'f') {
+      e.preventDefault();
+      document.querySelector('.user-search-input')?.focus();
+    }
+  };
+
+  // Generate search suggestions based on current data
+  const generateSearchSuggestions = () => {
+    if (!userSearch.trim() || allUsers.length === 0) return [];
+    
+    const searchTerm = userSearch.toLowerCase().trim();
+    const suggestions = new Set();
+    
+    allUsers.forEach(user => {
+      // Add matching names
+      if (user.name.toLowerCase().includes(searchTerm)) {
+        suggestions.add(user.name);
+      }
+      // Add matching emails
+      if (user.email.toLowerCase().includes(searchTerm)) {
+        suggestions.add(user.email);
+      }
+      // Add matching room numbers
+      if (user.roomNumber && user.roomNumber.toString().includes(searchTerm)) {
+        suggestions.add(`Room ${user.roomNumber}`);
+      }
+      // Add matching roles
+      if (user.role && user.role.toLowerCase().includes(searchTerm)) {
+        suggestions.add(user.role);
+      }
+      // Add matching statuses
+      if (user.status && user.status.toLowerCase().includes(searchTerm)) {
+        suggestions.add(user.status);
+      }
+    });
+    
+    // Add helpful search examples if search term is general
+    if (searchTerm.includes('active')) {
+      suggestions.add('active users');
+      suggestions.add('active users in january 2024');
+    }
+    if (searchTerm.includes('move')) {
+      suggestions.add('moved out');
+    }
+    if (searchTerm.includes('join')) {
+      suggestions.add('joined in 2024');
+      suggestions.add('joined last month');
+      suggestions.add('joined this month');
+    }
+    if (searchTerm.includes('jan') || searchTerm.includes('feb') || searchTerm.includes('mar')) {
+      suggestions.add(`${searchTerm} 2024`);
+      suggestions.add(`active users in ${searchTerm} 2024`);
+    }
+    if (searchTerm.includes('2024') || searchTerm.includes('2023')) {
+      suggestions.add(`joined in ${searchTerm}`);
+      suggestions.add(`active users in ${searchTerm}`);
+    }
+    
+    return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
+  };
+
+  // Add keyboard event listener
+  useEffect(() => {
+    document.addEventListener('keydown', handleSearchKeyDown);
+    return () => document.removeEventListener('keydown', handleSearchKeyDown);
+  }, []);
 
   const getFilteredPendingTenants = () => {
     return pendingTenants;
@@ -463,19 +747,39 @@ const AdminDashboard = ({ user, onLogout }) => {
     onLogout();
   };
 
-  const handleRemoveUser = async (userId) => {
-    if (!window.confirm('Remove this user?')) return;
+  const handleMoveOutUser = async (userId, userName) => {
+    if (!window.confirm(`Move out ${userName}? This will change their status to "moved-out".`)) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${config.API_URL}/users/${userId}`, {
+      await axios.put(`${config.API_URL}/users/${userId}/move-out`, {
+        moveOutDate: new Date().toISOString()
+      }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       fetchAllUsers();
       fetchStats();
+      alert('User moved out successfully!');
     } catch (error) {
-      alert(error.response?.data?.message || 'Error removing user');
+      alert(error.response?.data?.message || 'Error moving out user');
+    }
+  };
+
+  const handleReactivateUser = async (userId, userName) => {
+    if (!window.confirm(`Reactivate ${userName}? This will change their status back to "active".`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${config.API_URL}/users/${userId}/reactivate`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      fetchAllUsers();
+      fetchStats();
+      alert('User reactivated successfully!');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error reactivating user');
     }
   };
 
@@ -543,7 +847,7 @@ const AdminDashboard = ({ user, onLogout }) => {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
-            <span>PG Manager</span>
+            <span>Admin Dashboard</span>
           </div>
           <button 
             className="sidebar-toggle" 
@@ -1077,9 +1381,137 @@ const AdminDashboard = ({ user, onLogout }) => {
           <div className="content-area">
             <div className="page-header">
               <h1>All Users</h1>
-              <button className="btn-primary" onClick={fetchAllUsers}>
-                Refresh
-              </button>
+              <div className="user-filter-controls">
+                <div className="user-search-container">
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, room, phone, address, role, status, or date (e.g., 'january 2024', 'active users')... (Ctrl+F to focus)"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="user-search-input"
+                    title="Search by name, email, room number, phone, address, role, status, or date. Try 'january 2024', 'active users', 'room 101'. Press Ctrl+F to focus, Escape to clear."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setUserSearch('');
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  />
+                  <svg 
+                    className="user-search-icon"
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                  >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                  </svg>
+                  {userSearch && (
+                    <button
+                      onClick={() => {
+                        setUserSearch('');
+                        setShowSuggestions(false);
+                      }}
+                      className="user-search-clear"
+                      aria-label="Clear search"
+                    >
+                      ×
+                    </button>
+                  )}
+                  {showSuggestions && userSearch.trim() && (
+                    <div className="search-suggestions">
+                      {generateSearchSuggestions().map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="suggestion-item"
+                          onClick={() => {
+                            setUserSearch(suggestion);
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => setShowDateFilters(!showDateFilters)}
+                  className="btn-secondary"
+                  style={{ padding: '8px 12px', fontSize: '14px' }}
+                  title="Toggle date filters"
+                >
+                  📅 Date Filters
+                </button>
+                <select 
+                  className="form-input user-filter-select" 
+                  value={userFilter} 
+                  onChange={(e) => setUserFilter(e.target.value)}
+                >
+                  <option value="all">All Users</option>
+                  <option value="active">Active Users</option>
+                  <option value="moved-out">Moved Out</option>
+                </select>
+                <button className="btn-primary" onClick={fetchAllUsers}>
+                  Refresh
+                </button>
+                <button 
+                  onClick={exportFilteredUsers} 
+                  className="btn-secondary"
+                  title="Export filtered users to CSV"
+                  style={{ padding: '8px 12px', fontSize: '14px' }}
+                >
+                  📊 Export CSV
+                </button>
+              </div>
+              
+              {showDateFilters && (
+                <div className="date-filters-container">
+                  <div className="date-filter-group">
+                    <label>Join Date:</label>
+                    <input
+                      type="date"
+                      value={joinDateFilter}
+                      onChange={(e) => setJoinDateFilter(e.target.value)}
+                      className="form-input"
+                    />
+                    {joinDateFilter && (
+                      <button
+                        onClick={() => setJoinDateFilter('')}
+                        className="clear-date-btn"
+                        title="Clear date filter"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <div className="date-filter-group">
+                    <label>Join Month:</label>
+                    <input
+                      type="month"
+                      value={joinMonthFilter}
+                      onChange={(e) => setJoinMonthFilter(e.target.value)}
+                      className="form-input"
+                    />
+                    {joinMonthFilter && (
+                      <button
+                        onClick={() => setJoinMonthFilter('')}
+                        className="clear-date-btn"
+                        title="Clear month filter"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <div className="date-filter-info">
+                    <small>💡 Tip: You can also search for months directly, e.g., "january 2024" or "2024-01"</small>
+                  </div>
+                </div>
+              )}
             </div>
             
 
@@ -1089,14 +1521,49 @@ const AdminDashboard = ({ user, onLogout }) => {
                 <div className="spinner"></div>
                 <p>Loading users...</p>
               </div>
-            ) : getFilteredUsers().length === 0 ? (
+            ) : (
+              <>
+                {(userSearch.trim() || userFilter !== 'all' || joinDateFilter || joinMonthFilter) && (
+                  <div className="search-results-info">
+                    Showing <strong>{getFilteredUsers().length}</strong> of <strong>{allUsers.length}</strong> users
+                    {userSearch.trim() && (
+                      <span> matching "<strong>{userSearch}</strong>"</span>
+                    )}
+                    {userFilter !== 'all' && (
+                      <span> with status "<strong>{userFilter}</strong>"</span>
+                    )}
+                    {joinDateFilter && (
+                      <span> joined on <strong>{new Date(joinDateFilter).toLocaleDateString('en-IN')}</strong></span>
+                    )}
+                    {joinMonthFilter && (
+                      <span> joined in <strong>{new Date(joinMonthFilter).substring(0, 7)}</strong></span>
+                    )}
+                  </div>
+                )}
+                {getFilteredUsers().length === 0 ? (
                <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
-                 <p style={{ color: '#6b7280' }}>No users match your search.</p>
+                 <p style={{ color: '#6b7280' }}>
+                   {userSearch.trim() ? `No users found matching "${userSearch}"` : 'No users found with current filters.'}
+                 </p>
+                 {userSearch.trim() && (
+                   <button 
+                     onClick={() => setUserSearch('')}
+                     className="btn-primary"
+                     style={{ marginTop: '16px' }}
+                   >
+                     Clear Search
+                   </button>
+                 )}
                </div>
             ) : (
               <div className="card">
                 <div className="card-header">
                   <h2>Users ({getFilteredUsers().length})</h2>
+                  <div style={{ display: 'flex', gap: '15px', fontSize: '14px' }}>
+                    <span style={{ color: '#10b981' }}>Active: {allUsers.filter(u => u.status === 'active').length}</span>
+                    <span style={{ color: '#ef4444' }}>Moved Out: {allUsers.filter(u => u.status === 'moved-out').length}</span>
+                    <span style={{ color: '#f59e0b' }}>Total: {allUsers.length}</span>
+                  </div>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1122,31 +1589,34 @@ const AdminDashboard = ({ user, onLogout }) => {
                             }} 
                             onClick={() => setExpandedUserId(expandedUserId === user._id ? null : user._id)}
                           >
-                            <td style={{ padding: '12px' }}>{user.name}</td>
-                            <td style={{ padding: '12px', color: '#6b7280' }}>{user.email}</td>
-                            <td style={{ padding: '12px' }}>{user.roomNumber || '—'}</td>
+                            <td style={{ padding: '12px' }}>{highlightSearchTerm(user.name, userSearch)}</td>
+                            <td style={{ padding: '12px', color: '#6b7280' }}>{highlightSearchTerm(user.email, userSearch)}</td>
+                            <td style={{ padding: '12px' }}>{highlightSearchTerm(user.roomNumber || '—', userSearch)}</td>
                             <td style={{ padding: '12px' }}>
                               <span className="role-badge">{user.role}</span>
                             </td>
                             <td style={{ padding: '12px' }}>
-                              {user.role === 'tenant' ? (
-                                user.approved ? (
-                                  <span style={{ color: '#10b981', fontWeight: '600' }}>Approved</span>
-                                ) : (
-                                  <span style={{ color: '#f59e0b', fontWeight: '600' }}>Pending</span>
-                                )
-                              ) : (
-                                <span style={{ color: '#10b981', fontWeight: '600' }}>Active</span>
-                              )}
+                              <span className={`status-badge ${user.status || 'active'}`}>
+                                {(user.status || 'active').toUpperCase()}
+                              </span>
                             </td>
                             <td style={{ padding: '12px' }}>
                               {user.role !== 'admin' && (
-                                <button
-                                  className="text-btn remove"
-                                  onClick={(e) => { e.stopPropagation(); handleRemoveUser(user._id); }}
-                                >
-                                  Remove
-                                </button>
+                                user.status === 'active' ? (
+                                  <button
+                                    className="text-btn remove"
+                                    onClick={(e) => { e.stopPropagation(); handleMoveOutUser(user._id, user.name); }}
+                                  >
+                                    Move Out
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="text-btn approve"
+                                    onClick={(e) => { e.stopPropagation(); handleReactivateUser(user._id, user.name); }}
+                                  >
+                                    Reactivate
+                                  </button>
+                                )
                               )}
                             </td>
                           </tr>
@@ -1289,6 +1759,8 @@ const AdminDashboard = ({ user, onLogout }) => {
                 </div>
               </div>
             )}
+          </>
+        )}
           </div>
         )}
 

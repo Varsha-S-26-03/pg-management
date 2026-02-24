@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema({
   moveOutDate: {
     type: Date
   },
+  status: {
+    type: String,
+    enum: ['active', 'moved-out', 'pending'],
+    default: 'active'
+  },
   remainingRent: {
     type: Number,
     default: 0

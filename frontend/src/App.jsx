@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import AdminDashboard from './components/AdminDashboard';
 import TenantDashboard from './components/TenantDashboard';
+import MovedOutUser from './components/MovedOutUser';
 import AddTenant from './components/AddTenant';
 import Tenants from './components/Tenants';
 import ForgotPassword from './components/ForgotPassword';
@@ -18,11 +19,35 @@ function App() {
     return userData ? JSON.parse(userData) : null;
   });
 
+  // Check user status on app load and redirect if moved out
+  useEffect(() => {
+    if (user?.status === 'moved-out') {
+      // Clear any invalid authentication
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  }, [user]);
+
   const handleLogin = (token, user) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setIsAuthenticated(true);
     setUser(user);
+  };
+
+  // Check if user is moved out
+  const isUserMovedOut = (currentUser) => {
+    return currentUser?.status === 'moved-out';
+  };
+
+  // Get redirect path based on user status
+  const getRedirectPath = (currentUser) => {
+    if (isUserMovedOut(currentUser)) {
+      return '/moved-out';
+    }
+    return currentUser?.role === 'tenant' ? '/tenant/dashboard' : '/dashboard';
   };
 
   const handleLogout = () => {
@@ -39,7 +64,7 @@ function App() {
           path="/login" 
           element={
             isAuthenticated ?
-            (user?.role === 'tenant' ? <Navigate to="/tenant/dashboard" /> : <Navigate to="/dashboard" />) :
+            <Navigate to={getRedirectPath(user)} /> :
             <Login onLogin={handleLogin} />
           } 
         />
@@ -47,7 +72,7 @@ function App() {
           path="/signup" 
           element={
             isAuthenticated ?
-            (user?.role === 'tenant' ? <Navigate to="/tenant/dashboard" /> : <Navigate to="/dashboard" />) :
+            <Navigate to={getRedirectPath(user)} /> :
             <Signup onLogin={handleLogin} />
           } 
         />
@@ -68,12 +93,23 @@ function App() {
           } 
         />
         <Route
+          path="/moved-out"
+          element={
+            isAuthenticated && isUserMovedOut(user) ?
+            <MovedOutUser user={user} onLogout={handleLogout} /> :
+            <Navigate to="/login" />
+          }
+        />
+        <Route
           path="/tenant/dashboard"
           element={
             isAuthenticated ?
-            (user?.role === 'tenant' ?
-              <TenantDashboard user={user} onLogout={handleLogout} /> :
-              <Navigate to="/dashboard" />
+            (isUserMovedOut(user) ?
+              <Navigate to="/moved-out" /> :
+              (user?.role === 'tenant' ?
+                <TenantDashboard user={user} onLogout={handleLogout} /> :
+                <Navigate to="/dashboard" />
+              )
             ) :
             <Navigate to="/login" />
           }
@@ -82,9 +118,12 @@ function App() {
           path="/dashboard"
           element={
             isAuthenticated ?
-            (user?.role === 'admin' ?
-              <AdminDashboard user={user} onLogout={handleLogout} /> :
-              <Navigate to="/tenant/dashboard" />
+            (isUserMovedOut(user) ?
+              <Navigate to="/moved-out" /> :
+              (user?.role === 'admin' ?
+                <AdminDashboard user={user} onLogout={handleLogout} /> :
+                <Navigate to="/tenant/dashboard" />
+              )
             ) :
             <Navigate to="/login" />
           }

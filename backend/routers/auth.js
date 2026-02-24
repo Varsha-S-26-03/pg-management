@@ -152,7 +152,16 @@ router.post('/login', async (req, res) => {
     }
 
     if (user.role === 'tenant' && user.approved === false) {
-      return res.status(403).json({ message: 'Account pending admin approval' });
+      return res.status(403).json({ message: 'Account pending approval' });
+    }
+
+    // Check if user is moved out
+    if (user.status === 'moved-out') {
+      return res.status(403).json({ 
+        message: 'Your account has been deactivated. Please contact the PG owner for assistance.',
+        status: 'moved-out',
+        moveOutDate: user.moveOutDate
+      });
     }
 
     // Update last login
@@ -172,7 +181,10 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        status: user.status,
+        moveOutDate: user.moveOutDate,
+        approved: user.approved
       }
     });
 
