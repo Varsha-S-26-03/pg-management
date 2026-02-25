@@ -604,7 +604,7 @@ const Rooms = ({ onBack }) => {
                     name="type" 
                     value={newRoom.type} 
                     onChange={handleInputChange}
-                    className="form-select"
+                    className="form-select room-type-select"
                     required
                   >
                     <option value="single">🏠 Single Room (1 Person)</option>
@@ -799,7 +799,7 @@ const Rooms = ({ onBack }) => {
                     name="type" 
                     value={editRoom.type} 
                     onChange={handleEditChange}
-                    className="form-select"
+                    className="form-select room-type-select"
                     required
                   >
                     <option value="single">🏠 Single Room (1 Person)</option>

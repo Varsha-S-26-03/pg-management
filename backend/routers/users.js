@@ -123,6 +123,20 @@ router.put('/:id/move-out', authMiddleware, async (req, res) => {
     
     await user.save();
 
+    // Remove user from any rooms they are allocated to
+    try {
+      const rooms = await (await require('../models/Room')).find({ tenants: user._id });
+      for (const room of rooms) {
+        room.tenants = room.tenants.filter(t => String(t) !== String(user._id));
+        room.occupied = room.tenants.length;
+        room.status = room.occupied >= room.capacity ? 'occupied' : 'available';
+        await room.save();
+      }
+    } catch (roomErr) {
+      console.error('Error removing moved-out user from rooms:', roomErr);
+      // Continue without failing the whole request
+    }
+
     res.json({ 
       message: 'User moved out successfully',
       user: {

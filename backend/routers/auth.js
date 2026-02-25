@@ -55,6 +55,17 @@ router.post('/signup', async (req, res) => {
     }
 
     const isTenant = (role || 'tenant') === 'tenant';
+    const normalizeIdNumber = (type, value) => {
+      const v = (value || '').trim();
+      if (!v) return '';
+      if ((type || '').toLowerCase() === 'aadhaar') {
+        if (/\s/.test(v)) return v;
+        const digits = v.replace(/\D/g, '');
+        return digits.replace(/(.{4})/g, '$1 ').trim();
+      }
+      return v;
+    };
+    const formattedIdNumber = normalizeIdNumber(idType, idNumber);
 
     // ✅ Create user safely
     const user = new User({
@@ -68,7 +79,7 @@ router.post('/signup', async (req, res) => {
       age: age ? parseInt(age) : undefined,
       occupation: occupation ? occupation.trim() : '',
       idType: idType || undefined,
-      idNumber: idNumber ? idNumber.trim() : '',
+      idNumber: formattedIdNumber,
       emergencyContact: {
         name: emergencyContactName ? emergencyContactName.trim() : '',
         phone: emergencyContactPhone ? emergencyContactPhone.trim() : '',

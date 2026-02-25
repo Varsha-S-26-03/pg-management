@@ -49,6 +49,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const [joinDateFilter, setJoinDateFilter] = useState('');
   const [joinMonthFilter, setJoinMonthFilter] = useState('');
   const [showDateFilters, setShowDateFilters] = useState(false);
+  const [maskIdNumbers, setMaskIdNumbers] = useState(false);
 
   const getFilteredUsers = () => {
     let filtered = allUsers.filter(user => userFilter === 'all' || user.status === userFilter);
@@ -201,6 +202,15 @@ const AdminDashboard = ({ user, onLogout }) => {
     });
   };
 
+  const formatIdNumber = (user, masked) => {
+    const id = String(user.idNumber || '');
+    if (!masked) return id;
+    if ((user.idType || '').toLowerCase() === 'aadhaar') {
+      return id.replace(/\d(?=\d{4})/g, 'X');
+    }
+    return id.replace(/.(?=.{4})/g, 'X');
+  };
+
   // Function to export filtered users as CSV
   const exportFilteredUsers = () => {
     const filteredUsers = getFilteredUsers();
@@ -211,20 +221,50 @@ const AdminDashboard = ({ user, onLogout }) => {
     }
     
     // CSV headers
-    const headers = ['Name', 'Email', 'Phone', 'Room Number', 'Role', 'Status', 'Join Date', 'Move Out Date', 'Address'];
+    const idHeader = maskIdNumbers ? 'Aadhaar/PAN Number (masked)' : 'Aadhaar/PAN Number';
+    const headers = [
+      'Name',
+      'Email',
+      'Phone',
+      'Room Number',
+      'Bed Number',
+      'Role',
+      'Status',
+      'Address',
+      idHeader,
+      'Date of Birth',
+      'Occupation',
+      'Join Date',
+      'Move Out Date',
+      'Emergency Contact Name',
+      'Emergency Contact Phone',
+      'Emergency Contact Relation'
+    ];
     
     // CSV data
-    const csvData = filteredUsers.map(user => [
-      user.name,
-      user.email,
-      user.phone || '',
-      user.roomNumber || '',
-      user.role,
-      user.status || 'active',
-      new Date(user.createdAt || user.joiningDate).toLocaleDateString('en-IN'),
-      user.moveOutDate ? new Date(user.moveOutDate).toLocaleDateString('en-IN') : '',
-      user.address || ''
-    ]);
+    const csvData = filteredUsers.map(user => {
+      const dob = user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-IN') : '';
+      const joinDate = new Date(user.createdAt || user.joiningDate).toLocaleDateString('en-IN');
+      const moveOut = user.moveOutDate ? new Date(user.moveOutDate).toLocaleDateString('en-IN') : '';
+      return [
+        user.name,
+        user.email,
+        user.phone || '',
+        user.roomNumber || '',
+        getBedNumber(user),
+        user.role,
+        user.status || 'active',
+        user.address || '',
+        formatIdNumber(user, maskIdNumbers),
+        dob,
+        user.occupation || '',
+        joinDate,
+        moveOut,
+        user.emergencyContact?.name || '',
+        user.emergencyContact?.phone || '',
+        user.emergencyContact?.relation || ''
+      ];
+    });
     
     // Combine headers and data
     const csvContent = [headers, ...csvData]
@@ -819,6 +859,15 @@ const AdminDashboard = ({ user, onLogout }) => {
       'dormitory': 'Dormitory'
     };
     return typeMap[room.type] || room.type;
+  };
+
+  const getBedNumber = (user) => {
+    if (!user?.roomNumber) return '—';
+    const room = rooms.find(r => r.roomNumber === user.roomNumber);
+    if (!room || !Array.isArray(room.tenants)) return '—';
+    const idx = room.tenants.findIndex(t => (t._id || t) === user._id);
+    if (idx === -1) return '—';
+    return `${room.roomNumber}B${idx + 1}`;
   };
 
   const getRentStatus = (userId) => {
@@ -1459,6 +1508,14 @@ const AdminDashboard = ({ user, onLogout }) => {
                 <button className="btn-primary" onClick={fetchAllUsers}>
                   Refresh
                 </button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={maskIdNumbers} 
+                    onChange={(e) => setMaskIdNumbers(e.target.checked)} 
+                  />
+                  <span style={{ fontSize: '14px', color: '#374151' }}>Mask Aadhaar/PAN</span>
+                </label>
                 <button 
                   onClick={exportFilteredUsers} 
                   className="btn-secondary"
@@ -1572,6 +1629,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Name</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Email</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Room No</th>
+                        <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Bed No</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Role</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Status</th>
                         <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#6b7280' }}>Actions</th>
@@ -1592,6 +1650,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                             <td style={{ padding: '12px' }}>{highlightSearchTerm(user.name, userSearch)}</td>
                             <td style={{ padding: '12px', color: '#6b7280' }}>{highlightSearchTerm(user.email, userSearch)}</td>
                             <td style={{ padding: '12px' }}>{highlightSearchTerm(user.roomNumber || '—', userSearch)}</td>
+                            <td style={{ padding: '12px' }}>{getBedNumber(user)}</td>
                             <td style={{ padding: '12px' }}>
                               <span className="role-badge">{user.role}</span>
                             </td>
@@ -1670,6 +1729,10 @@ const AdminDashboard = ({ user, onLogout }) => {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Room Number</span>
                                     <span style={{ color: '#0f172a', fontWeight: 500 }}>{user.roomNumber || '—'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bed Number</span>
+                                    <span style={{ color: '#0f172a', fontWeight: 500 }}>{getBedNumber(user)}</span>
                                   </div>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <span style={{ color: '#64748b', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Room Type</span>

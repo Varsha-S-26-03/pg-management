@@ -17,7 +17,16 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
   const [selectedRoomForAllocation, setSelectedRoomForAllocation] = useState(null);
   const [unallocatedTenants, setUnallocatedTenants] = useState([]);
   const [selectedTenantId, setSelectedTenantId] = useState('');
-  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    floorLabel: 'f1',
+    floor: 1,
+    roomNumber: '',
+    type: 'single',
+    capacity: 1,
+    price: 4000
+  });
 
   
 
@@ -37,6 +46,95 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
     if (t === 'double') return '2 share';
     if (t === 'triple') return '3 share';
     return 'Dormitory';
+  };
+  const PRICING = { single: 4000, double: 3750, triple: 3000 };
+  const CAPACITY = { single: 1, double: 2, triple: 3 };
+
+  const parseFloorLabel = (label) => {
+    const m = String(label).toLowerCase().match(/^f(\d+)$/);
+    return m ? Number(m[1]) : 1;
+  };
+  const formatFloorLabel = (floorNum) => `f${floorNum}`;
+  const generateRoomNumber = (floorNum) => {
+    const floorRooms = rooms.filter(r => (r.floor || 1) === floorNum);
+    const seqs = floorRooms
+      .map(r => {
+        const m = String(r.roomNumber || '').toLowerCase().match(new RegExp(`^f${floorNum}r(\\d+)$`));
+        return m ? Number(m[1]) : null;
+      })
+      .filter(v => v !== null);
+    const next = seqs.length ? Math.max(...seqs) + 1 : 1;
+    return `f${floorNum}r${next}`;
+  };
+  const getBedLabels = (floorNum, roomNumber) => {
+    const m = String(roomNumber).toLowerCase().match(/^f(\d+)r(\d+)$/);
+    const rSeq = m ? Number(m[2]) : 1;
+    const beds = CAPACITY[newRoom.type] || 1;
+    const labels = [];
+    for (let i = 1; i <= beds; i++) {
+      labels.push(`f${floorNum},r${rSeq},b${i}`);
+    }
+    return labels;
+  };
+  const isRoomNumberExists = (rn) => rooms.some(r => String(r.roomNumber).toLowerCase() === String(rn).toLowerCase());
+  const openCreateModal = () => {
+    const floorNum = 1;
+    setNewRoom({
+      floorLabel: formatFloorLabel(floorNum),
+      floor: floorNum,
+      roomNumber: generateRoomNumber(floorNum),
+      type: 'single',
+      capacity: CAPACITY['single'],
+      price: PRICING['single']
+    });
+    setIsCreateSubmitting(false);
+    setIsCreateModalOpen(true);
+  };
+  const handleCreateInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'floorLabel') {
+      const floorNum = parseFloorLabel(value);
+      setNewRoom(prev => {
+        const rn = generateRoomNumber(floorNum);
+        return { ...prev, floorLabel: value, floor: floorNum, roomNumber: rn };
+      });
+    } else if (name === 'type') {
+      const cap = CAPACITY[value];
+      const price = PRICING[value];
+      setNewRoom(prev => ({ ...prev, type: value, capacity: cap, price }));
+    } else {
+      setNewRoom(prev => ({ ...prev, [name]: value }));
+    }
+  };
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    const { roomNumber, type, capacity, price, floor } = newRoom;
+    if (!roomNumber || !type || !capacity || !price || !floor) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    if (isRoomNumberExists(roomNumber)) {
+      alert('Room number already exists. Please choose a different room number.');
+      return;
+    }
+    try {
+      setIsCreateSubmitting(true);
+      const token = localStorage.getItem('token');
+      await axios.post(`${config.API_URL}/rooms`, {
+        roomNumber,
+        type,
+        capacity: Number(capacity),
+        price: Number(price),
+        floor: Number(floor)
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setIsCreateModalOpen(false);
+      await fetchRooms();
+      alert('Room created');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to create room');
+    } finally {
+      setIsCreateSubmitting(false);
+    }
   };
 
   const fetchRooms = useCallback(async () => {
@@ -269,14 +367,11 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
 
   return (
     <div className="content-area">
-      {showCreateRoom ? (
-        <Rooms onBack={() => setShowCreateRoom(false)} />
-      ) : (
         <>
           <div className="page-header">
             <h1>Rooms</h1>
             {userRole === 'admin' && (
-              <button className="btn-primary" onClick={() => setShowCreateRoom(true)}>
+              <button className="btn-primary" onClick={openCreateModal}>
                 Create Room
               </button>
             )}
@@ -349,11 +444,14 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
                         {Array.isArray(room.tenants) && room.tenants.length > 0 && (
                           <div className="occupants">
                             <p><strong>Occupants:</strong></p>
-                            {room.tenants.map(t => (
+                            {room.tenants.map((t, idx) => (
                               <div key={t._id} className="occupant-row">
                                 <div>
                                   <div className="occupant-name">{t.name}</div>
                                   <div className="occupant-email">{t.email}</div>
+                                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                                    Bed: {`${room.roomNumber}B${idx + 1}`}
+                                  </div>
                                 </div>
                                 {userRole === 'admin' && (
                                   <button 
@@ -583,8 +681,163 @@ const SharedRooms = ({ userRole = 'tenant' }) => {
           </div>
         </div>
       )}
-        </>
+      
+      {/* Create Room Modal (Admin) */}
+      {isCreateModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content room-modal">
+            <div className="modal-header room-modal-header">
+              <div className="header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+              </div>
+              <div className="header-content">
+                <h2>Create New Room</h2>
+                <p>Add a new room with f-floor, room and bed labels</p>
+              </div>
+              <button className="close-btn" onClick={() => setIsCreateModalOpen(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleCreateSubmit} className="room-form">
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <select
+                    name="floorLabel"
+                    value={newRoom.floorLabel}
+                    onChange={handleCreateInputChange}
+                    className="form-select"
+                    required
+                  >
+                    {Array.from({ length: 10 }).map((_, i) => {
+                      const label = `f${i + 1}`;
+                      return <option key={label} value={label}>{label.toUpperCase()}</option>;
+                    })}
+                  </select>
+                  <label className="form-label">
+                    <span className="label-icon">🏢</span>
+                    Floor
+                  </label>
+                  <span className="input-hint">Select floor (f1, f2, f3 ...)</span>
+                </div>
+                <div className="form-group floating-label">
+                  <input
+                    type="text"
+                    name="roomNumber"
+                    value={newRoom.roomNumber}
+                    onChange={handleCreateInputChange}
+                    placeholder=" "
+                    className="form-input"
+                    required
+                    style={{ backgroundColor: newRoom.roomNumber && isRoomNumberExists(newRoom.roomNumber) ? '#ffebee' : '#ffffff' }}
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">🏠</span>
+                    Room Number
+                  </label>
+                  <span className="input-hint">Format: f{newRoom.floor}rN (e.g., f1r1)</span>
+                  {newRoom.roomNumber && isRoomNumberExists(newRoom.roomNumber) && (
+                    <span style={{ color: '#d32f2f', fontSize: '12px' }}>
+                      ⚠️ Room number already exists!
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <select
+                    name="type"
+                    value={newRoom.type}
+                    onChange={handleCreateInputChange}
+                    className="form-select room-type-select"
+                    required
+                  >
+                    <option value="single">Single Share (1 person)</option>
+                    <option value="double">2 Share (2 people)</option>
+                    <option value="triple">3 Share (3 people)</option>
+                  </select>
+                  <label className="form-label">
+                    <span className="label-icon">📋</span>
+                    Room Type
+                  </label>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={newRoom.capacity}
+                    onChange={handleCreateInputChange}
+                    min="1"
+                    max="10"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                    disabled
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">👥</span>
+                    Capacity
+                  </label>
+                  <span className="input-hint">Auto-set based on share type</span>
+                </div>
+                <div className="form-group floating-label">
+                  <input
+                    type="number"
+                    name="price"
+                    value={newRoom.price}
+                    onChange={handleCreateInputChange}
+                    min="0"
+                    step="50"
+                    placeholder=" "
+                    className="form-input"
+                    required
+                    disabled
+                  />
+                  <label className="form-label">
+                    <span className="label-icon">₹</span>
+                    Monthly Rent
+                  </label>
+                  <span className="input-hint">
+                    Single ₹4000, 2-share ₹3750, 3-share ₹3000
+                  </span>
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>Bed labels (preview):</span>
+                  <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {getBedLabels(newRoom.floor, newRoom.roomNumber).map(lbl => (
+                      <span key={lbl} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '4px 8px', fontSize: 12 }}>
+                        {lbl}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={() => setIsCreateModalOpen(false)}
+                >
+                  <span>Cancel</span>
+                </button>
+                <button 
+                  type="submit" 
+                  className={`btn-create ${isCreateSubmitting ? 'loading' : ''}`}
+                  disabled={isCreateSubmitting}
+                >
+                  <span className="btn-icon">{isCreateSubmitting ? '⏳' : '+'}</span>
+                  <span>{isCreateSubmitting ? 'Creating...' : 'Create Room'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
+        </>
     </div>
   );
 };
