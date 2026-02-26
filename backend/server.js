@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
 });
 
 // Health check route
-app.get('/', (req, res) => {
+app.get('/api/health', (req, res) => {
   const mongoose = require('mongoose');
   res.json({ 
     message: 'PG Management System API is running',
@@ -93,6 +93,12 @@ app.post('/test', (req, res) => {
     body: req.body,
     contentType: req.headers['content-type']
   });
+});
+
+const frontendPath = path.join(__dirname, '../frontend', 'dist');
+app.use(express.static(frontendPath));
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
